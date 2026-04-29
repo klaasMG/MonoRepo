@@ -1,0 +1,14 @@
+{
+    "base": "/../..",
+    "mirror-dir": "public_mirror_repository's",
+    "projects": {
+        "Gmake": {
+            "project_root": "/GMake",
+            "repo-public": true
+        },
+        "PythonCompilerLibrary": {
+            "project_root": "/PythonCompilerLibrary",
+            "repo-public": true
+        }
+    }
+}
