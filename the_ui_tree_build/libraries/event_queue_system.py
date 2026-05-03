@@ -138,7 +138,7 @@ class EventSystem:
         except TypeError:
             return False
         
-        for rule , value in zip(spec , data):
+        for rule , value in zip(spec , data, strict=True):
             t = rule[0]
             
             if t == "int":

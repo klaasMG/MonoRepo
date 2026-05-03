@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from OpenGL.GL import *
+from OpenGL.GL import *  # noqa: F403
 
 class RegisterError(Exception):
     pass

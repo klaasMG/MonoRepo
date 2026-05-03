@@ -160,7 +160,7 @@ class GSGRenderSystem(QOpenGLWidget):
         locked: bool = self.GSG_gui_system.font_manager.text_lock.lock(0.01)
         if locked:
             self.text_texture_atlas = deepcopy(self.GSG_gui_system.font_manager.font_map_image)
-            data = self.GSG_gui_system.font_manager.get_render_info()
+            _data = self.GSG_gui_system.font_manager.get_render_info()
         self.text_atlas_copy = Texture(self.text_texture_atlas, "uTextAtlas", TextureType.GREY_SCALE)
         self.GSG_gui_system.font_manager.text_lock.release()
         self.last_frame.resize(width, height)
@@ -527,7 +527,7 @@ class GSGRenderSystem(QOpenGLWidget):
         self.GSG_gui_system.capture_input = False
         super().focusOutEvent(e)
 
-    def showEvent(self, e):
+    def showEvent(self, e):  # noqa: F811
         self.GSG_gui_system.capture_input = True
         super().showEvent(e)
 
