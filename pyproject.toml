@@ -1,0 +1,16 @@
+[project]
+name = "mono_repo"
+version = "0.3.0.0"
+requires-python = ">=3.13"
+dependencies = [
+    "ruff>0.15",
+]
+
+[tool.ruff]
+exclude = [".venv", "venv", "__pycache__", ".git", "typeshed"]
+target-version = "py313"
+[tool.ruff.lint]
+select = ["E", "F", "B"]
+ignore = ["E501", "F401", "F405"]
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"builtins.print".msg = "Use print_wrapper instead of print."
