@@ -1,22 +1,20 @@
+import sys
 import time
+import numpy as np
 from print_wrapper import tprint, dbg
 from renderer import GSGRenderSystem
-import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
-import numpy as np
 from pathlib import Path
 from FontManager import FontManager
-from the_ui_tree_build.focus_manager import FocusManager
+from input_maneger import InputManager, Action, ActionType, InputRegistry, FocusManager, Keys, Buttons
+from typing import Any, Callable
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from threading import Lock, Thread
 from update_data_manager import DataHolder
 from GSGwidget import GSGWidget
-import faulthandler
 from hold_lock import HoldLock
-faulthandler.enable()
-
 
 class app(QApplication):
     def __init__(self, *args, event_system = None,parent = None, **kwargs):
@@ -34,6 +32,7 @@ class app(QApplication):
 class GSGUiManager:
     def __init__(self):
         self.focus_manager = FocusManager()
+        self.input_registry = InputRegistry()
         self.buffers_swapped = False
         self.square_exist = False
         self.write_widget_data = Lock()
@@ -50,7 +49,8 @@ class GSGUiManager:
         self.widgets_by_id = {}
         self.free_ids = []
         self.next_id = 0
-        self.GSG_renderer_system = None
+        self.GSG_renderer_system: None | GSGRenderSystem = None
+        self.input_manager: None | InputManager = None
         self.hold_lock = HoldLock()
         self.Widget_update_data = DataHolder(self)
         self.window_top = None
@@ -79,6 +79,7 @@ class GSGUiManager:
     
     def run_ui_manager(self):
         self.GSG_renderer_system = GSGRenderSystem(self)
+        self.input_manager = InputManager()
         self.GSG_renderer_system.show()
         self.widget_thread.start()
         self.frame_timer = QTimer()
@@ -89,7 +90,7 @@ class GSGUiManager:
 
     
     def update_ui_manager(self):
-        event = self.ui_manager_queue.receive_event()
+        self.ui_manager_queue.receive_event()
         self.GSG_renderer_system.render_update()
         
     def use_event(self, event):
@@ -103,6 +104,9 @@ class GSGUiManager:
     
     def update_widgets(self):
         while self.running:
+            events: list[Action] = self.get_input_events(max_event_requests=100)
+            for event in events:
+                print(event)
             if not self.square_exist:
                 self.sqaure = GSGWidget(parent=self.root)
                 path_or_data = "yes"
@@ -111,8 +115,21 @@ class GSGUiManager:
                                              WidgetDataType.SHAPE: -1,
                                              WidgetDataType.PATH_OR_DATA: path_or_data,
                                              WidgetDataType.ASSET_OR_TEXT: "text"})
+                def print_key_press_happend():
+                    print("key_press_happened")
+                self.add_input_event_to_widget(self.sqaure, ActionType.KeyPress, {}, print_key_press_happend, Keys.L)
                 self.square_exist = True
             time.sleep(0.1)
+
+    def get_input_events(self, max_event_requests: int = None):
+        events: list[Action] = []
+        max_event_requests_local = max_event_requests
+        while self.input_manager.is_event_available() and max_event_requests_local is None or max_event_requests_local > 0:
+            event: Action = self.input_manager.get_event()
+            events.append(event)
+            if max_event_requests_local is not None:
+                max_event_requests_local -= 1
+        return events
     
     def append_widget(self , widget, data):
         if self.free_ids:
@@ -214,6 +231,25 @@ class GSGUiManager:
         self.widget_data[WidgetDataType.ASSETS_ID][wid] = default
         self.widget_data[WidgetDataType.TEXT_ID][wid] = default
         self.widget_data[WidgetDataType.PARENT][wid] = default
+
+    def add_input_event_to_widget(self, widget: GSGWidget , action_type: ActionType, rules: Any, func: Callable, key_button: Keys | None | Buttons | str = None):
+        widget_id = widget.id
+        if not self.input_registry.is_already_registered(widget_id, action_type, key_button):
+            self.input_registry.register_action(action_type, widget_id, func, rules, key_button)
+        else:
+            self.input_registry.register_func(widget_id, action_type, func, rules, key_button)
+
+    def remove_input_event_from_widget(self, widget: GSGWidget , action_type: ActionType, func: Callable, key_button: Keys | None | Buttons | str = None):
+        widget_id = widget.id
+        self.input_registry.remove_func(widget_id, action_type, func, key_button)
+
+    def remove_widget_input_events(self, widget: GSGWidget , action_type: ActionType, key_button: Keys | None | Buttons | str = None):
+        widget_id = widget.id
+        self.input_registry.remove_action(widget_id, action_type, key_button)
+
+    def change_func_rules_for_widget(self, widget: GSGWidget, action: ActionType,func: Callable, rules: Any, key_button: Keys | None | Buttons | str = None):
+        widget_id = widget.id
+        self.input_registry.change_rules(widget_id, action,func, rules, key_button)
     
     def init_widget_data(self , widget_data_types: dict):
         for key , (size , dtype) in widget_data_types.items():
@@ -228,7 +264,7 @@ class GSGUiManager:
         if acquired:
             self.GSG_renderer_system.widget_data, self.widget_data = self.widget_data, self.GSG_renderer_system.widget_data
             self.buffers_swapped = True
-            released = self.hold_lock.release()
+            self.hold_lock.release()
 
 if __name__ == "__main__":
     manager = GSGUiManager()

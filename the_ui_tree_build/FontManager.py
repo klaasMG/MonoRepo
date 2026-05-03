@@ -3,9 +3,9 @@ from font_holder import Font
 # noinspection PyUnresolvedReferences
 from GridPacker import TextPacker, PlacedRect
 from PIL import Image
-Transpose = Image.Transpose
 from pathlib import Path
 from hold_lock import HoldLock
+Transpose = Image.Transpose
 
 ttf_path = Path("assets/fonts/AovelSansRounded-rdDL.ttf")
 

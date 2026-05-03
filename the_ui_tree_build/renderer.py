@@ -2,11 +2,11 @@ import numpy as np
 import time
 from copy import deepcopy
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from OpenGL.GL import *
+from OpenGL.GL import *  # noqa: F403
 from enum import Enum
 from print_wrapper import dbg
 from widget_data import WidgetDataType
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from event_system import event_system, EventQueue, EventTypeEnum
 from PassSystem import ShaderPassData, Texture, set_glActiveTexture, TextureType, CpuFrame
 from Uniform_Registry import uniform_registry, UniformTypes
@@ -476,13 +476,13 @@ class GSGRenderSystem(QOpenGLWidget):
             with open(path, "r", encoding="utf-8") as f:
                 f.read(1)
             return "text"
-        except:
+        except (UnidentifiedImageError, OSError):
             pass
 
         try:
             Image.open(path)
             return "image"
-        except:
+        except (UnidentifiedImageError, OSError):
             pass
 
         return "binary"

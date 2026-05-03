@@ -1,5 +1,5 @@
 import numpy as np
-from OpenGL.GL import *
+from OpenGL.GL import *  # noqa: F403
 from Uniform_Registry import uniform_registry, UniformTypes
 from enum import Enum
 from PIL import Image

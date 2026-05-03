@@ -1,6 +1,9 @@
 import threading
 from ui_debug import instant_debug_func
 
+def print_wrapper(*args, **kwargs):
+    instant_debug_func(print, *args, **kwargs)
+
 def tprint(*args, **kwargs):
     thread = threading.current_thread()
     print(f"[{thread.name} | {thread.ident}]" , *args, **kwargs)
