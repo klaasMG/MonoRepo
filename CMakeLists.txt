@@ -1,12 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(Superbuild LANGUAGES CXX)
 
-function(PybindIntegration)
-
-
-
-endfunction()
-
 option(BUILD_CODE "Build libA" ON)
 option(BUILD_PCL "Build libB" ON)
 option(BUILD_GMAKE "Build libC" ON)
@@ -41,5 +35,6 @@ if(BUILD_CODE)
 endif()
 
 if(BUILD_PCL)
+    option(TEST_COMPILATION "test compilation" ON)
     add_subdirectory(PythonCompilerLibrary)
 endif()

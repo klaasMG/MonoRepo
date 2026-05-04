@@ -93,7 +93,7 @@ class CpuFrame:
         self.height = height
         locked = self.frame_lock.lock()
         if locked:
-            self.frame_data_height_id = np.zeros(self.width * self.height, dtype=np.uint32)
+            self.frame_data_height_id = np.zeros((self.width , self.height), dtype=np.uint32)
         self.frame_lock.release()
 
     def get_pixel_data(self, x: int, y :int):

@@ -6,6 +6,10 @@ dependencies = [
     "ruff>0.15",
 ]
 
+[tool.mypy]
+mypy_path = "the_ui_tree_build"
+check_untyped_defs = "true"
+
 [tool.ruff]
 exclude = [".venv", "venv", "__pycache__", ".git", "typeshed"]
 target-version = "py313"

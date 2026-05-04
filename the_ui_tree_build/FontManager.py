@@ -85,8 +85,8 @@ class FontManager:
         self.text_lock.release()
         
     def add_font(self, font_name: str, font_file: Path):
-        font_file = str(font_file)
-        font = Font(font_file)
+        font_file_str = str(font_file)
+        font = Font(font_file_str)
         self.fonts[font_name] = font
     
     def remove_font(self, font_name):

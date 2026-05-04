@@ -50,7 +50,7 @@ class GSGUiManager:
         self.free_ids = []
         self.next_id = 0
         self.GSG_renderer_system: None | GSGRenderSystem = None
-        self.input_manager: None | InputManager = None
+        self.input_manager: InputManager = InputManager()
         self.hold_lock = HoldLock()
         self.Widget_update_data = DataHolder(self)
         self.window_top = None
@@ -79,7 +79,6 @@ class GSGUiManager:
     
     def run_ui_manager(self):
         self.GSG_renderer_system = GSGRenderSystem(self)
-        self.input_manager = InputManager()
         self.GSG_renderer_system.show()
         self.widget_thread.start()
         self.frame_timer = QTimer()
@@ -91,7 +90,8 @@ class GSGUiManager:
     
     def update_ui_manager(self):
         self.ui_manager_queue.receive_event()
-        self.GSG_renderer_system.render_update()
+        if self.GSG_renderer_system is not None:
+            self.GSG_renderer_system.render_update()
         
     def use_event(self, event):
         event_type, data = event
@@ -106,7 +106,26 @@ class GSGUiManager:
         while self.running:
             events: list[Action] = self.get_input_events(max_event_requests=100)
             for event in events:
-                print(event)
+                action_type: ActionType = event.action_type
+                event_data = event.data
+                for i in event_data:
+                    print(i)
+                if action_type == ActionType.MousePress or action_type == ActionType.MouseRelease:
+                    position_x: int = event_data[0]
+                    position_y: int = event_data[1]
+                    height, widget_id = self.GSG_renderer_system.last_frame.get_pixel_data(position_x, position_y)
+                    is_input_registered: bool = self.input_registry.is_already_registered(widget_id, action_type, event_data[2])
+                    if is_input_registered:
+                        self.focus_manager.set_focused_widget(widget_id)
+                widget_id = self.focus_manager.get_focused_widget()
+                button = None
+                if action_type == ActionType.MouseRelease or action_type == ActionType.MousePress:
+                    button = event_data[2]
+                elif action_type == ActionType.KeyRelease or action_type == ActionType.KeyPress:
+                    button = event_data
+                if self.input_registry.is_already_registered(widget_id, action_type, button):
+                    func: Callable = self.input_registry.lookup(widget_id, action_type, button)
+                    func()
             if not self.square_exist:
                 self.sqaure = GSGWidget(parent=self.root)
                 path_or_data = "yes"
@@ -121,10 +140,13 @@ class GSGUiManager:
                 self.square_exist = True
             time.sleep(0.1)
 
-    def get_input_events(self, max_event_requests: int = None):
+    def get_input_events(self, max_event_requests: int | None = None):
         events: list[Action] = []
         max_event_requests_local = max_event_requests
-        while self.input_manager.is_event_available() and max_event_requests_local is None or max_event_requests_local > 0:
+        while self.input_manager.is_event_available() and (max_event_requests_local is None or isinstance(max_event_requests_local, int)):
+            if max_event_requests_local is not None:
+                if max_event_requests_local < 0:
+                    break
             event: Action = self.input_manager.get_event()
             events.append(event)
             if max_event_requests_local is not None:
@@ -260,11 +282,12 @@ class GSGUiManager:
         self.asset_path.add(path)
             
     def pos_update(self):
-        acquired = self.hold_lock.lock(time_out=0.01)
-        if acquired:
-            self.GSG_renderer_system.widget_data, self.widget_data = self.widget_data, self.GSG_renderer_system.widget_data
-            self.buffers_swapped = True
-            self.hold_lock.release()
+        if self.GSG_renderer_system is not None:
+            acquired = self.hold_lock.lock(time_out=0.01)
+            if acquired:
+                self.GSG_renderer_system.widget_data, self.widget_data = self.widget_data, self.GSG_renderer_system.widget_data
+                self.buffers_swapped = True
+                self.hold_lock.release()
 
 if __name__ == "__main__":
     manager = GSGUiManager()

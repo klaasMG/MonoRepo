@@ -10,7 +10,9 @@ class FocusManager:
         self.focused_widget = GSGWidget(parent=-1)
         self.focused_widget.id = -1
 
-    def set_focused_widget(self, widget):
+    def set_focused_widget(self, widget_id):
+        widget = GSGWidget()
+        widget.id = widget_id
         self.focused_widget = widget
 
     def get_focused_widget(self):
@@ -216,6 +218,9 @@ pynput_to_mouse_mapping: dict[str, Buttons] = {
     "Button.x2": Buttons.X2,
 }
 
+class InputEventQueueEmptyException(Exception):
+    pass
+
 class InputManager:
     def __init__(self):
         self.mouse_listener = mouse.Listener(
@@ -228,15 +233,16 @@ class InputManager:
             on_press=self.on_press,
             on_release=self.on_release
         )
-        self.ui_event_queue = queue.SimpleQueue()
+        self.ui_event_queue: queue.SimpleQueue[Action] = queue.SimpleQueue()
         self.mouse_listener.start()
         self.keyboard_listener.start()
 
-    def get_event(self)-> None | Action:
+    def get_event(self):
         try:
             return self.ui_event_queue.get_nowait()
         except queue.Empty:
             return None
+            #raise InputEventQueueEmptyException() from None
 
     def is_event_available(self) -> bool:
         return self.ui_event_queue.qsize() > 0
@@ -307,5 +313,5 @@ class InputRegistry:
         func_focus = self.registry[key, widget_id, action]
         return func_focus
 
-    def is_already_registered(self, widget_id: int, action: ActionType, key: Keys | Buttons | str | None):
-        return (key, widget_id, action) in self.registry
+    def is_already_registered(self, widget_id: int, action_type: ActionType, key: Keys | Buttons | str | None):
+        return (key, widget_id, action_type) in self.registry
