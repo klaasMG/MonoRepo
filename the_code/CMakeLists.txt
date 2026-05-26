@@ -55,16 +55,3 @@ set_target_properties(font_holder PROPERTIES
 set_target_properties(font_holder PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY
         ${CMAKE_CURRENT_SOURCE_DIR}/the_ui_tree_build)
-
-add_library(shader_preprocessing SHARED shader_preprocesing.cpp)
-
-target_link_libraries(shader_preprocessing PRIVATE common_lib)
-
-target_link_libraries(shader_preprocessing PRIVATE
-        ${Python3_LIBRARIES}
-)
-
-set_target_properties(shader_preprocessing PROPERTIES
-        PREFIX ""
-        SUFFIX ".pyd"
-)

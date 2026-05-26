@@ -1,7 +1,7 @@
 # noinspection PyUnresolvedReferences
-from font_holder import Font
+from font_holder import Font  # type: ignore[import-not-found]
 # noinspection PyUnresolvedReferences
-from GridPacker import TextPacker, PlacedRect
+from GridPacker import TextPacker, PlacedRect  # type: ignore[import-not-found]
 from PIL import Image
 from pathlib import Path
 from hold_lock import HoldLock

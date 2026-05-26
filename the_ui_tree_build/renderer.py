@@ -1,8 +1,9 @@
 import numpy as np
 import time
+from typing import Any
 from copy import deepcopy
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from OpenGL.GL import *  # noqa: F403
+from OpenGL.GL import *  # type: ignore[import-untyped] # noqa: F403
 from enum import Enum
 from print_wrapper import dbg
 from widget_data import WidgetDataType
@@ -59,8 +60,8 @@ class GSGRenderSystem(QOpenGLWidget):
         self.asset_path = self.GSG_gui_system.asset_path
         self.asset_ids = self.GSG_gui_system.asset_ids
         self.text_ids = self.GSG_gui_system.text_ids
-        self.texture_atlas = Image.open("assets/image_atlases/atlas.png")
-        self.texture_atlas = self.texture_atlas.convert("RGBA")
+        self.texture_atlas_file = Image.open("assets/image_atlases/atlas.png")
+        self.texture_atlas = self.texture_atlas_file.convert("RGBA")
         self.text_texture_atlas = Image.new("L", (8192,8192), 0)
         self.atlas_texture: Texture | None = None
         self.text_atlas_copy: Texture | None = None
@@ -195,7 +196,7 @@ class GSGRenderSystem(QOpenGLWidget):
                 self.text_texture_atlas.save("kjghgyt.png", "PNG")
                 dbg("ll")
         self.GSG_gui_system.font_manager.text_lock.release()
-        if has_changed:
+        if has_changed and self.text_atlas_copy is not None:
             dbg("po")
             self.text_atlas_copy.resend(self.text_texture_atlas)
 
@@ -251,7 +252,6 @@ class GSGRenderSystem(QOpenGLWidget):
 
     def init_shaders(self, shader_dir: dict):
         for shader_pass in shader_dir.values():
-            shader_pass: ShaderPassData = shader_pass
             shader_pass.load(self)
 
     def init_assets(self):
@@ -259,6 +259,7 @@ class GSGRenderSystem(QOpenGLWidget):
         for asset in self.asset_ids:
             if asset not in self.open_assets:  # correct asset found
                 asset_id = self.asset_ids[asset]
+                file: Any = None
                 if self.file_type(asset) == "text":
                     file = open(asset, "r")
                 elif self.file_type(asset) == "binary":
@@ -284,7 +285,7 @@ class GSGRenderSystem(QOpenGLWidget):
                         self.assets.append(None)
                         over_shoot -= 1
                 self.assets[asset_id] = file
-        if atlas_update:
+        if atlas_update and self.atlas_texture is not None:
             self.atlas_texture.resend(self.texture_atlas)
 
     def update_assets(self):
@@ -498,6 +499,7 @@ class GSGRenderSystem(QOpenGLWidget):
 
     def showEvent(self, event):
         self.update_widget_origin()
+        self.GSG_gui_system.capture_input = True
         super().showEvent(event)
 
     def resizeEvent(self, event):
@@ -526,10 +528,6 @@ class GSGRenderSystem(QOpenGLWidget):
     def focusOutEvent(self, e):
         self.GSG_gui_system.capture_input = False
         super().focusOutEvent(e)
-
-    def showEvent(self, e):  # noqa: F811
-        self.GSG_gui_system.capture_input = True
-        super().showEvent(e)
 
     def hideEvent(self, e):
         self.GSG_gui_system.capture_input = False

@@ -1,9 +1,36 @@
 import queue
 import print_wrapper
-from pynput import keyboard, mouse
-from enum import Enum
+from pynput import keyboard, mouse  # type: ignore[import-untyped]
+from enum import Enum, auto
 from typing import Callable, Any
 from GSGwidget import GSGWidget
+
+class KeyState(Enum):
+    UP = True
+    DOWN = False
+
+class KeyPositionRegistry:
+    def __init__(self):
+        self.registry: dict[str, KeyState] = {}
+
+    def swap_key_state(self, key: str):
+        if key in self.registry:
+            key_state = self.registry[key]
+            if key_state == KeyState.UP:
+                self.registry[key] = KeyState.DOWN
+            elif key_state == KeyState.DOWN:
+                self.registry[key] = KeyState.UP
+            else:
+                raise RuntimeError("how the fuck did this happen")
+        else:
+            self.registry[key] = KeyState.DOWN
+
+    def get_key_state(self, key: str) -> KeyState:
+        return self.registry[key]
+
+class InputRules:
+    def __init__(self):
+        pass
 
 class FocusManager:
     def __init__(self):
@@ -222,7 +249,9 @@ class InputEventQueueEmptyException(Exception):
     pass
 
 class InputManager:
-    def __init__(self):
+    def __init__(self, gsg_ui_manager, key_state_manager: KeyPositionRegistry):
+        self.gsg_ui_manager = gsg_ui_manager
+        self.key_state_manager: KeyPositionRegistry = key_state_manager
         self.mouse_listener = mouse.Listener(
             on_move=self.on_move,
             on_click=self.on_click,
@@ -239,27 +268,61 @@ class InputManager:
 
     def get_event(self):
         try:
-            return self.ui_event_queue.get_nowait()
+            event = self.ui_event_queue.get_nowait()
+            button: Keys | Buttons | None = None
+            if event.action_type == ActionType.MousePress or event.action_type == ActionType.MouseRelease:
+                action_data = event.data
+                button = action_data[2]
+            elif event.action_type == ActionType.KeyPress or event.action_type == ActionType.KeyRelease:
+                action_data = event.data
+                button = action_data
+            if button is not None:
+                assert isinstance(button.value, str)
+                button_str: str = button.value
+                self.key_state_manager.swap_key_state(button_str)
+            return event
         except queue.Empty:
             return None
             #raise InputEventQueueEmptyException() from None
+
+    def normalize_mouse_coords(self, x: int, y: int):
+        window_bottom, window_top = self.gsg_ui_manager.window_bottom, self.gsg_ui_manager.window_top
+        print(window_top, window_bottom, x, y)
+        if window_top is None or window_bottom is None:
+            return None
+        if x < window_top[0] or y < window_top[1] or x > window_bottom[0] or y > window_bottom[1]:
+            return None
+        mouse_coords: tuple[int, int] = x - window_top[0], y - window_top[1]
+        return mouse_coords
 
     def is_event_available(self) -> bool:
         return self.ui_event_queue.qsize() > 0
 
     def on_move(self, x, y):
+        mouse_coords = self.normalize_mouse_coords(x, y)
+        if mouse_coords is None:
+            return
+        x, y = mouse_coords
         self.ui_event_queue.put(Action(ActionType.MoveMouse, (x, y)))
 
     def on_click(self, x, y, button, pressed):
+        mouse_coords = self.normalize_mouse_coords(x, y)
+        if mouse_coords is None:
+            return
+        x, y = mouse_coords
         if pressed:
             action_type = ActionType.MousePress
         else:
             action_type = ActionType.MouseRelease
+        button = self.convert_button_to_string_or_buttons(button)
         action: Action = Action(action_type, (x, y, button))
-        self.convert_button_to_string_or_buttons(button)
         self.ui_event_queue.put(action)
 
     def on_scroll(self, x, y, dx, dy):
+        mouse_coords = self.normalize_mouse_coords(x, y)
+        if mouse_coords is None:
+            return
+        x, y = mouse_coords
         self.ui_event_queue.put(Action(ActionType.Scroll, (x, y, dx, dy)))
 
     def on_press(self, key):
@@ -309,9 +372,12 @@ class InputRegistry:
         functions[func] = rules
         self.registry[key, widget_id, action] = functions
 
-    def lookup(self, widget_id: int, action: ActionType, key: Keys | Buttons | str | None):
+    def lookup(self, widget_id: int, action: ActionType, key: Keys | Buttons | str | None) -> dict[Callable, Any]:
         func_focus = self.registry[key, widget_id, action]
         return func_focus
 
     def is_already_registered(self, widget_id: int, action_type: ActionType, key: Keys | Buttons | str | None):
         return (key, widget_id, action_type) in self.registry
+
+def check_func_rules(rules: Any) -> bool:
+    return True

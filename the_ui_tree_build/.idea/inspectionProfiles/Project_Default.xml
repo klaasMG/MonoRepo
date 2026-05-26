@@ -1,0 +1,63 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="PyQt5" />
+          <option value="asv" />
+          <option value="asv_runner" />
+          <option value="attrs" />
+          <option value="beautifulsoup4" />
+          <option value="build" />
+          <option value="certifi" />
+          <option value="charset-normalizer" />
+          <option value="colorama" />
+          <option value="distlib" />
+          <option value="filelock" />
+          <option value="idna" />
+          <option value="importlib_metadata" />
+          <option value="json5" />
+          <option value="libraries" />
+          <option value="llvmlite" />
+          <option value="numba" />
+          <option value="numpy" />
+          <option value="packaging" />
+          <option value="pillow" />
+          <option value="platformdirs" />
+          <option value="pybind11" />
+          <option value="Pympler" />
+          <option value="pynput" />
+          <option value="PyOpenGL" />
+          <option value="PyOpenGL-accelerate" />
+          <option value="pyproject_hooks" />
+          <option value="PyQt5-Qt5" />
+          <option value="PyQt5_sip" />
+          <option value="PySide6" />
+          <option value="PySide6_Addons" />
+          <option value="PySide6_Essentials" />
+          <option value="pywin32" />
+          <option value="PyYAML" />
+          <option value="requests" />
+          <option value="setuptools" />
+          <option value="shiboken6" />
+          <option value="six" />
+          <option value="soupsieve" />
+          <option value="tabulate" />
+          <option value="typing_extensions" />
+          <option value="urllib3" />
+          <option value="virtualenv" />
+          <option value="wikipedia" />
+          <option value="zipp" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="shape_to_array" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

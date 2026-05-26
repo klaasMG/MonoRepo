@@ -7,8 +7,10 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 from pathlib import Path
 from FontManager import FontManager
-from input_maneger import InputManager, Action, ActionType, InputRegistry, FocusManager, Keys, Buttons
+from input_manager import InputManager, Action, ActionType, InputRegistry, FocusManager, Keys, Buttons, check_func_rules, KeyPositionRegistry
 from typing import Any, Callable
+
+from the_ui_tree_build.input_manager import KeyState
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from threading import Lock, Thread
@@ -31,6 +33,7 @@ class app(QApplication):
 
 class GSGUiManager:
     def __init__(self):
+        self.key_position_registry: KeyPositionRegistry = KeyPositionRegistry()
         self.focus_manager = FocusManager()
         self.input_registry = InputRegistry()
         self.buffers_swapped = False
@@ -50,7 +53,7 @@ class GSGUiManager:
         self.free_ids = []
         self.next_id = 0
         self.GSG_renderer_system: None | GSGRenderSystem = None
-        self.input_manager: InputManager = InputManager()
+        self.input_manager: InputManager = InputManager(self, self.key_position_registry)
         self.hold_lock = HoldLock()
         self.Widget_update_data = DataHolder(self)
         self.window_top = None
@@ -101,19 +104,27 @@ class GSGUiManager:
             self.width = data[0]
             self.height = data[1]
         return None
+
+    def is_key_down(self, key)-> bool:
+        key_state: KeyState = self.key_position_registry.get_key_state(key)
+        if key_state == KeyState.UP:
+            return True
+        else:
+            return False
     
     def update_widgets(self):
         while self.running:
+            #debug code
+            if self.focus_manager.get_focused_widget() == -1:
+                self.focus_manager.set_focused_widget(1)
             events: list[Action] = self.get_input_events(max_event_requests=100)
             for event in events:
                 action_type: ActionType = event.action_type
                 event_data = event.data
-                for i in event_data:
-                    print(i)
                 if action_type == ActionType.MousePress or action_type == ActionType.MouseRelease:
                     position_x: int = event_data[0]
                     position_y: int = event_data[1]
-                    height, widget_id = self.GSG_renderer_system.last_frame.get_pixel_data(position_x, position_y)
+                    height, widget_id = self.GSG_renderer_system.last_frame.get_pixel_data(position_x, position_y)  # type: ignore[union-attr]
                     is_input_registered: bool = self.input_registry.is_already_registered(widget_id, action_type, event_data[2])
                     if is_input_registered:
                         self.focus_manager.set_focused_widget(widget_id)
@@ -124,21 +135,32 @@ class GSGUiManager:
                 elif action_type == ActionType.KeyRelease or action_type == ActionType.KeyPress:
                     button = event_data
                 if self.input_registry.is_already_registered(widget_id, action_type, button):
-                    func: Callable = self.input_registry.lookup(widget_id, action_type, button)
-                    func()
-            if not self.square_exist:
-                self.sqaure = GSGWidget(parent=self.root)
-                path_or_data = "yes"
-                self.append_widget(self.sqaure, {WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
-                                             WidgetDataType.COLOUR: [255, 255, 25, 255], WidgetDataType.SHADER_PASS: 2,
-                                             WidgetDataType.SHAPE: -1,
-                                             WidgetDataType.PATH_OR_DATA: path_or_data,
-                                             WidgetDataType.ASSET_OR_TEXT: "text"})
-                def print_key_press_happend():
-                    print("key_press_happened")
-                self.add_input_event_to_widget(self.sqaure, ActionType.KeyPress, {}, print_key_press_happend, Keys.L)
-                self.square_exist = True
-            time.sleep(0.1)
+                    callable_rules: dict[Callable, Any] = self.input_registry.lookup(widget_id, action_type, button)
+                    for func, rules in callable_rules.items():
+                        if check_func_rules(rules):
+                            func()
+            self.user_widget_update_func()
+            time.sleep(0.0166)
+
+    def user_widget_update_func(self):
+        if not self.square_exist:
+            self.sqaure = GSGWidget(parent=self.root)
+            path_or_data = "yes"
+            self.append_widget(self.sqaure,{
+                    WidgetDataType.POSITION: [320, 200, 1, 420, 300, 1],
+                    WidgetDataType.COLOUR: [255, 255, 25, 255],
+                    WidgetDataType.SHADER_PASS: 2,
+                    WidgetDataType.SHAPE: -1,
+                    WidgetDataType.PATH_OR_DATA: path_or_data,
+                    WidgetDataType.ASSET_OR_TEXT: "text",
+                },
+            )
+
+            def print_key_press_happened():
+                print("key_press_happened")
+
+            self.add_input_event_to_widget(self.sqaure, ActionType.KeyPress, {}, print_key_press_happened, Keys.L)
+            self.square_exist = True
 
     def get_input_events(self, max_event_requests: int | None = None):
         events: list[Action] = []
