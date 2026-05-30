@@ -7,6 +7,7 @@ option(BUILD_GMAKE "Build libC" ON)
 option(BUILD_ASSET_MANAGER "Build libD" ON)
 option(BUILD_AUDIO_ENGINE "Build libE" ON)
 option(BUILD_LOGGER "Build libF" ON)
+option(BUILD_STRING_FORMATTER "Build libG" ON)
 
 message(STATUS "this is a hotfix and should be changed later")
 include_directories(${CMAKE_SOURCE_DIR}/lib/cpp)
@@ -24,12 +25,16 @@ target_include_directories(common_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/lib/cpp_base
 )
 
+if (BUILD_STRING_FORMATTER)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/vendor/cpp/fmt)
+endif ()
+
 if (BUILD_LOGGER)
-    add_subdirectory(${CMAKE_SOURCE_DIR}/lib/logger)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/logger)
 endif ()
 
 if(BUILD_ASSET_MANAGER)
-    add_subdirectory(${CMAKE_SOURCE_DIR}/lib/asset_manager)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/asset_manager)
 endif()
 
 if(BUILD_GMAKE)

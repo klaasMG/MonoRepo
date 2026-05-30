@@ -78,12 +78,12 @@ TextWriteHandle::~TextWriteHandle() {
     }
 }
 
-Result<std::string&, BaseErrorType> TextWriteHandle::get() {
+Result<std::string*, BaseErrorType> TextWriteHandle::get() {
     if (data) {
-        return *data;
+        return Result<std::string*, BaseErrorType>(data);
     }
     BaseErrorType error = BaseErrorType::FILE_DATA_ERROR;
-    Result result = Result<std::string&, BaseErrorType>(error);
+    Result result = Result<std::string*, BaseErrorType>(error);
     return result;
 }
 
@@ -159,12 +159,12 @@ BinaryWriteHandle& BinaryWriteHandle::operator=(BinaryWriteHandle&& other) noexc
     return *this;
 }
 
-Result<std::vector<uint8_t>&, BaseErrorType> BinaryWriteHandle::get() {
+Result<std::vector<uint8_t>*, BaseErrorType> BinaryWriteHandle::get() {
     if (data) {
-        return *data;
+        return Result<std::vector<uint8_t>*, BaseErrorType>(data);
     }
     BaseErrorType error = BaseErrorType::FILE_DATA_ERROR;
-    Result result = Result<std::vector<uint8_t>&, BaseErrorType>(error);
+    Result result = Result<std::vector<uint8_t>*, BaseErrorType>(error);
     return result;
 }
 
@@ -219,7 +219,7 @@ Result<TextHandle, BaseErrorType> FileManager::reqeust_text_file(const fs::path&
     // ✅ FIX 1: replace insert with assignment
     text_files[abs_paths] = data;
 
-    return  Result{TextHandle(this, abs_paths, &text_files[abs_paths])};
+    return Result<TextHandle, BaseErrorType>(TextHandle(this, abs_paths, &text_files[abs_paths]));
 }
 
 void FileManager::return_text_file(const fs::path& paths) {
@@ -279,7 +279,7 @@ Result<BinaryHandle, BaseErrorType> FileManager::request_binary_file(const fs::p
     assets_opened[abs_paths] = num_times;
     binary_files[abs_paths] = data;
 
-    return Result{BinaryHandle(this, abs_paths, &binary_files[abs_paths])};
+    return Result<BinaryHandle, BaseErrorType>(BinaryHandle(this, abs_paths, &binary_files[abs_paths]));
 }
 
 void FileManager::return_binary_file(const fs::path& path) {
@@ -324,7 +324,7 @@ Result<TextWriteHandle, BaseErrorType> FileManager::request_text_write(const fs:
     file.read(data.data(), size);
 
     text_files[abs_paths] = data;
-    return Result{TextWriteHandle(this, abs_paths, &text_files[abs_paths])};
+    return Result<TextWriteHandle, BaseErrorType>(TextWriteHandle(this, abs_paths, &text_files[abs_paths]));
 }
 
 void FileManager::return_text_write(const fs::path& path) {
@@ -364,7 +364,7 @@ Result<BinaryWriteHandle, BaseErrorType> FileManager::request_binary_write(const
     file.read(reinterpret_cast<char*>(data.data()), size);
 
     binary_files[abs_paths] = data;
-    return Result{BinaryWriteHandle(this, abs_paths, &binary_files[abs_paths])};
+    return Result<BinaryWriteHandle, BaseErrorType>(BinaryWriteHandle(this, abs_paths, &binary_files[abs_paths]));
 }
 
 void FileManager::return_binary_write(const fs::path& path) {

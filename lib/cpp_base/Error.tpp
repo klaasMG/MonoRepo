@@ -2,7 +2,7 @@
 #include "Error.h"
 #include <iostream>
 
-std::string ErrorType_to_string(BaseErrorType type) {
+std::string inline ErrorType_to_string(BaseErrorType type) {
     switch (type) {
         case BaseErrorType::OK: {
             return "OK error";
@@ -22,51 +22,47 @@ std::string ErrorType_to_string(BaseErrorType type) {
         case BaseErrorType::QUEUE_EMPTY: {
             return "Queue is empty";
         }
+        case BaseErrorType::LOGGER_ERROR: {
+            return "";
+        }
     }
     std::cerr << "This can not happen add all other types and this will no longer fail" << std::endl;
     std::terminate();
 };
 
-template <typename Data, typename Error>
-Result<Data, Error>::Result(const Data& data) {
-    this->data = data;
-    type = BaseErrorType::OK;
-}
+template <typename Data, IsErrorEnum Error>
+Result<Data, Error>::Result(Data data) : data(std::move(data)), type(BaseErrorType::OK) {}
 
-template <typename Data, typename Error>
-Result<Data, Error>::Result(const Data& data, const Error& type) {
-    if (type == BaseErrorType::OK) {
+template <typename Data, IsErrorEnum Error>
+Result<Data, Error>::Result(Data data, Error type) : data(std::move(data)), type(std::move(type)) {
+    if (this->type == BaseErrorType::OK) {
         std::cerr << "a error can not be ok" << std::endl;
         std::terminate();
     }
-    this->data = data;
-    this->type = type;
 }
 
-template <typename Data, typename Error>
+template <typename Data, IsErrorEnum Error>
 Result<Data, Error>::~Result() {
     if (!is_error_handeled) {
         std::terminate();
     }
 }
 
-template <typename Data, typename Error>
-Result<Data, Error>::Result(const Error& type) {
-    if (type == BaseErrorType::OK) {
+template <typename Data, IsErrorEnum Error>
+Result<Data, Error>::Result(Error type) : data{}, type(std::move(type)) {
+    if (this->type == BaseErrorType::OK) {
         std::cerr << "a error can not be ok" << std::endl;
         std::terminate();
     }
-    this->type = type;
-    this->data = {};
 }
 
-template <typename Data, typename Error>
+template <typename Data, IsErrorEnum Error>
 Error Result<Data, Error>::check_error() {
     is_error_checked = true;
     return type;
 }
 
-template <typename Data, typename Error>
+template <typename Data, IsErrorEnum Error>
 Data Result<Data, Error>::GetData() const {
     if (!is_error_checked) {
         std::cerr << "check error first" << std::endl;
@@ -75,7 +71,7 @@ Data Result<Data, Error>::GetData() const {
     return data;
 }
 
-template <typename Data, typename Error>
+template <typename Data, IsErrorEnum Error>
 Data Result<Data, Error>::Handle_Error() {
     if (!is_error_checked) {
         std::terminate();

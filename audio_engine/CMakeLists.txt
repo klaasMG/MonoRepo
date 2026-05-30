@@ -7,6 +7,7 @@ add_library(AudioEngine src/main.cpp
         vendor/miniaudio/miniaudio.h)
 
 target_include_directories(AudioEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(AudioEngine PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(AudioEngine PRIVATE common_lib)
 
 if(MINGW)

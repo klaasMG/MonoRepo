@@ -45,7 +45,7 @@ public:
 
     ~TextWriteHandle();
 
-    [[nodiscard]]Result<std::string&, BaseErrorType> get();
+    [[nodiscard]]Result<std::string*, BaseErrorType> get();
 
 private:
     FileManager* manager = nullptr;
@@ -88,7 +88,7 @@ public:
 
     ~BinaryWriteHandle();
 
-    [[nodiscard]]Result<std::vector<uint8_t>& , BaseErrorType> get();
+    [[nodiscard]]Result<std::vector<uint8_t>* , BaseErrorType> get();
 
 private:
     FileManager* manager = nullptr;
