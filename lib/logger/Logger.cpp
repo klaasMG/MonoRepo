@@ -1,7 +1,7 @@
 #include "Logger.h"
-#include "fmt/format.h"
 
-Logger::Logger(const OutputLocation& location, const LogLevel& min_log_level, const std::string& logger_name) {
+namespace logging {
+    Logger::Logger(const OutputLocation& location, const LogLevel& min_log_level, const std::string& logger_name) {
     this->logger_name = logger_name;
     this->min_log_level = min_log_level;
     this->output_location = location;
@@ -58,7 +58,8 @@ std::string to_string(LoggerError log_level) {
     throw std::runtime_error{"this should never happen if the func is designed well"};
 }
 
-Logger& Logger::create_logger_leaf(const OutputLocation& location, const LogLevel& min_log_level_in, const std::string& logger_name_in) {                                                                                                                                                                                                   lib/logger/CMakeLists.txt          +1
+Logger& Logger::create_logger_leaf(const OutputLocation& location, const LogLevel& min_log_level_in, const std::string& logger_name_in) {
          sub_loggers.push_back(std::make_unique<Logger>(location, min_log_level_in, logger_name_in));
          return *sub_loggers.back();
+}
 }

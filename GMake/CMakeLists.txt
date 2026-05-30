@@ -25,9 +25,4 @@ set_target_properties(GMake PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY
         ${CMAKE_SOURCE_DIR})
 
-if(MINGW)
-    target_link_libraries(GMake PRIVATE -static-libgcc -static-libstdc++ -static)
-endif()
-if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
+link_compiler_library_statically(GMake)
