@@ -12,31 +12,34 @@
 #include <filesystem>
 #include <iostream>
 
-struct ASTNode {
-    virtual ~ASTNode() = default;
-};
+namespace gmake {
+    struct ASTNode {
+        virtual
+        ~ASTNode() = default;
+    };
 
-struct IdentNode : public ASTNode{
-    std::string Ident;
-};
+    struct IdentNode : public ASTNode {
+        std::string Ident;
+    };
 
-struct FunctionNode : public ASTNode{
-    IdentNode Ident;
-    std::vector<IdentNode> Args;
-};
+    struct FunctionNode : public ASTNode {
+        IdentNode Ident;
+        std::vector<IdentNode> Args;
+    };
 
-class ASTGMAKE{
-    std::vector<Token> tokens;
-    int currentToken;
+    class ASTGMAKE {
+        std::vector<Token> tokens;
+        int currentToken;
 
-public:
-    ASTGMAKE(const std::vector<Token> &input_tokens);
+    public:
+        ASTGMAKE(const std::vector<Token>& input_tokens);
 
-    std::vector<std::unique_ptr<ASTNode>> getNodes();
+        std::vector<std::unique_ptr<ASTNode>> getNodes();
 
-private:
-    Token getNextToken();
-    static void throw_ast_error(const std::string& message);
-};
+    private:
+        Token getNextToken();
+        static void throw_ast_error(const std::string& message);
+    };
+}
 
 #endif

@@ -87,10 +87,10 @@ std::string run_command(const fs::path& cmd_path) {
     return output;
 }
 
-GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector<std::string>& function_args, GMAKEConfig config) {
+gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector<std::string>& function_args, gmake::GMAKEConfig config) {
     ExceptionHandler.add_to_call_stack(function_name);
-	switch (parseFunction(function_name)) {
-	case GMakeFunction::SET_PROJECT_DIRECTORY: {
+	switch (gmake::parseFunction(function_name)) {
+	case gmake::GMakeFunction::SET_PROJECT_DIRECTORY: {
 			fs::path project_dir = function_args[0];
 
 			if (project_dir.is_absolute()) {
@@ -102,7 +102,7 @@ GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector
 			break;
 	}
 
-	case GMakeFunction::SET_PROGRAM: {
+	case gmake::GMakeFunction::SET_PROGRAM: {
 			const std::string& shader_program = function_args[0];
 			std::vector<fs::path> shaders;
 			for (const std::string& arg : function_args | std::views::drop(1)) {
@@ -113,14 +113,14 @@ GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector
 			break;
 	}
 
-	case GMakeFunction::EXTEND_STANDARD:{
+	case gmake::GMakeFunction::EXTEND_STANDARD:{
 	    for (const std::string& arg : function_args){
 	        config.StandardExtensions.emplace_back(arg);
 	    }
 	    break;
 	}
 
-	case GMakeFunction::SSBO_LAYOUT_BINDING:{
+	case gmake::GMakeFunction::SSBO_LAYOUT_BINDING:{
 	    PRINT(function_args.size());
         if (function_args.empty()){
             ExceptionHandler.error(2,"No program given");
@@ -175,7 +175,7 @@ GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector
 	    break;
 	}
 
-	case GMakeFunction::UNKNOWN:
+	case gmake::GMakeFunction::UNKNOWN:
 		ExceptionHandler.error(1, "Function is not found" + function_name);
 		break;
 	}
@@ -183,15 +183,15 @@ GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector
 	return config;
 }
 
-std::vector<std::unique_ptr<ASTNode>> build_ast(const std::string& gmake_file){
-	TokeniserGMAKE tokeniser(gmake_file);
-	std::vector<Token> tokens = tokeniser.Tokenise();
-	ASTGMAKE ast_builder(tokens);
-	std::vector<std::unique_ptr<ASTNode>> nodes = ast_builder.getNodes();
+std::vector<std::unique_ptr<gmake::ASTNode>> build_ast(const std::string& gmake_file){
+	gmake::TokeniserGMAKE tokeniser(gmake_file);
+	std::vector<gmake::Token> tokens = tokeniser.Tokenise();
+	gmake::ASTGMAKE ast_builder(tokens);
+	std::vector<std::unique_ptr<gmake::ASTNode>> nodes = ast_builder.getNodes();
 	return nodes;
 }
 
-std::string do_includes(const std::string& shader, std::map<fs::path, std::string>& open_shaders, const GMAKEConfig &config){
+std::string do_includes(const std::string& shader, std::map<fs::path, std::string>& open_shaders, const gmake::GMAKEConfig &config){
 	std::istringstream stream(shader);
 	std::string line;
 	std::string rebuild;
@@ -213,11 +213,11 @@ std::string do_includes(const std::string& shader, std::map<fs::path, std::strin
 				fs::path shader_path(include_path);
 
 				if (shader_path.is_absolute()){
-					new_line = ReadFilePath(shader_path);
+					new_line = gmake::ReadFilePath(shader_path);
 				}
 				else{
 					fs::path shader_path_comb = config.ProjectDir / shader_path;
-					new_line = ReadFilePath(shader_path_comb);
+					new_line = gmake::ReadFilePath(shader_path_comb);
 				}
 			}
 		}
@@ -234,7 +234,7 @@ std::string do_includes(const std::string& shader, std::map<fs::path, std::strin
 	return rebuild;
 }
 
-void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
+void include_run(const fs::path& shader_directory, const gmake::GMAKEConfig &config){
 	std::map<fs::path, std::string> open_shader_files;
 	std::map<fs::path, std::string> open_include_files;
 
@@ -254,7 +254,7 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 				actual_file_path = config.ProjectDir / file;
 			}
 
-			std::string shader_content = ReadFilePath(actual_file_path);
+			std::string shader_content = gmake::ReadFilePath(actual_file_path);
 		    for (const fs::path& standard_path : config.StandardExtensions){
 		        std::string path_string = standard_path.string();
 		        std::string standard_file_path_include = "#include " + path_string;
@@ -270,7 +270,7 @@ void include_run(const fs::path& shader_directory, const GMAKEConfig &config){
 
 	for (const std::pair<const fs::path, std::string> &write_file : open_include_files) {
 		PRINT("Writing to: " << write_file.first);
-		WriteFile(write_file.first, write_file.second);
+		gmake::WriteFile(write_file.first, write_file.second);
 	}
 }
 
@@ -341,13 +341,13 @@ std::vector<SSBOBlock> extractSSBOs(const std::string& src) {
     return result;
 }
 
-void run_layout_bindings(const GMAKEConfig &config){
+void run_layout_bindings(const gmake::GMAKEConfig &config){
     for (const std::pair<const std::string, std::vector<fs::path>>& shader : config.ShaderPrograms){
         std::vector<fs::path> shaders = shader.second;
         for (const fs::path& file : shaders){
             fs::path actual_file_path;
             actual_file_path = config.ProjectDir.parent_path() / "preprocessed_shaders" / file.filename();
-            std::string shader_content = ReadFilePath(actual_file_path);
+            std::string shader_content = gmake::ReadFilePath(actual_file_path);
             std::vector<SSBOBlock> ssbo_blocks = extractSSBOs(shader_content);
             for ( SSBOBlock& ssbo_block : ssbo_blocks){
                 std::string ssbo_content = ssbo_block.text;
@@ -411,15 +411,15 @@ void run_layout_bindings(const GMAKEConfig &config){
                 }
                 PRINT("gh");
                 fs::path parent_actual_file_path = config.ProjectDir.parent_path();
-                WriteFile(parent_actual_file_path / "preprocessed_shaders" / file, shader_content); //preprocessed_shaders
+                gmake::WriteFile(parent_actual_file_path / "preprocessed_shaders" / file, shader_content); //preprocessed_shaders
             }
         }
     }
 }
 
-std::vector<std::string> make_args(const std::vector<IdentNode>& args){
+std::vector<std::string> make_args(const std::vector<gmake::IdentNode>& args){
 	std::vector<std::string> arg_string;
-	for (const IdentNode& arg : args){
+	for (const gmake::IdentNode& arg : args){
 		arg_string.push_back(arg.Ident);
 	}
 	return arg_string;
@@ -430,9 +430,9 @@ int main(int argc, char* argv[]) {
 	    current_dir = fs::current_path();
 	    std::cout << current_dir << std::endl;
 	    char* gmake_file_path = argv[1];
-	    std::string gmake_file = readFile(gmake_file_path);
-	    std::vector<std::unique_ptr<ASTNode>> nodes = build_ast(gmake_file);
-	    GMAKEConfig config = GMAKEConfig();
+	    std::string gmake_file = gmake::readFile(gmake_file_path);
+	    std::vector<std::unique_ptr<gmake::ASTNode>> nodes = build_ast(gmake_file);
+	    gmake::GMAKEConfig config = gmake::GMAKEConfig();
 	    std::vector<std::string> flags;
 	    for (int i = 2; i < argc; i++){
 	        const std::string& arg = argv[i];
@@ -462,12 +462,12 @@ int main(int argc, char* argv[]) {
 	    if (config.debug){
 	        ExceptionHandler.set_debug(true);
 	    }
-	    for (const std::unique_ptr<ASTNode>& node : nodes){
-	        if (dynamic_cast<FunctionNode*>(node.get())){
-                auto function = dynamic_cast<FunctionNode*>(node.get());
-	            IdentNode function_name = function->Ident;
+	    for (const std::unique_ptr<gmake::ASTNode>& node : nodes){
+	        if (dynamic_cast<gmake::FunctionNode*>(node.get())){
+                auto function = dynamic_cast<gmake::FunctionNode*>(node.get());
+                gmake::IdentNode function_name = function->Ident;
 	            std::string name_check = function_name.Ident;
-	            std::vector<IdentNode> function_args = function->Args;
+	            std::vector<gmake::IdentNode> function_args = function->Args;
 	            std::vector<std::string> Args = make_args(function_args);
 	            config = runGMAKEFunction(name_check, Args, config);
 	        }

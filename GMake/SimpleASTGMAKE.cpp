@@ -1,5 +1,7 @@
 #include "SimpleASTGMAKE.h"
 
+namespace gmake {
+
 ASTGMAKE::ASTGMAKE(const std::vector<Token> &input_tokens){
     tokens = input_tokens;
     currentToken = 0;
@@ -74,4 +76,6 @@ Token ASTGMAKE::getNextToken(){
 void ASTGMAKE::throw_ast_error(const std::string& message){
     std::cerr << "ast error" << std::endl;
     throw std::runtime_error(message);
+}
+
 }
