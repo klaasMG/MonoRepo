@@ -2,11 +2,23 @@
 #include "vendor/miniaudio/miniaudio.h"
 #include <filesystem>
 #include <vector>
+#include <mutex>
 namespace fs = std::filesystem;
+
+enum class Channel : uint8_t{
+    FrontLeft,
+    FrontRight,
+    FrontCenter,
+    LFE,
+    SurroundLeft,
+    SurroundRight,
+    BackLeft,
+    BackRight
+};
 
 namespace AudioEngine {
     struct Config {
-        uint16_t ChannelCount = 2;
+        uint16_t ChannelCount = 6;
         uint64_t SampleRate = 48000;
     };
 
@@ -14,6 +26,7 @@ namespace AudioEngine {
         uint64_t at_sample;
         std::vector<float> samples;
         int16_t channels;
+        std::vector<Channel> channel_layout;
     };
 
     class AudioManager {
@@ -23,6 +36,7 @@ namespace AudioEngine {
         static void data_callback(ma_device* device, void* output, const void* input, ma_uint32 frameCount);
         void play_sound(const fs::path& path);
         Config config;
+        std::mutex voice_mutex;
         std::vector<Voice> voices;
         std::vector<float> output_buffer;
         ma_device device;
