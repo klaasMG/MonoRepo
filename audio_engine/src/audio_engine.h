@@ -34,11 +34,14 @@ namespace AudioEngine {
         AudioManager();
         ~AudioManager();
         static void data_callback(ma_device* device, void* output, const void* input, ma_uint32 frameCount);
-        void play_sound(const fs::path& path);
+        void play_sound(const fs::path& path, const float& gain = 1.0);
+        void set_gain(const float& gain);
+        uint8_t voice_cycle = 0;
         Config config;
         std::mutex voice_mutex;
         std::vector<Voice> voices;
         std::vector<float> output_buffer;
         ma_device device;
+        float gain = 1.0;
     };
 }
