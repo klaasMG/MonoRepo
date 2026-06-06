@@ -183,12 +183,79 @@ gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std:
 	return config;
 }
 
-std::vector<std::unique_ptr<gmake::ASTNode>> build_ast(const std::string& gmake_file){
+std::vector<gmake::Node> build_ast(const std::string& gmake_file){
 	gmake::TokeniserGMAKE tokeniser(gmake_file);
 	std::vector<gmake::Token> tokens = tokeniser.Tokenise();
 	gmake::ASTGMAKE ast_builder(tokens);
-	std::vector<std::unique_ptr<gmake::ASTNode>> nodes = ast_builder.getNodes();
+	std::vector<gmake::Node> nodes = ast_builder.getNodes();
 	return nodes;
+}
+
+struct SSBOBlock {
+	std::string text;
+	size_t start;
+	size_t end; // one past the last character (like substr)
+};
+
+std::vector<SSBOBlock> extractSSBOs(const std::string& src) {
+	std::vector<SSBOBlock> result;
+	size_t pos = 0;
+
+	while ((pos = src.find("layout(", pos)) != std::string::npos) {
+		size_t start = pos;
+
+		// --- match layout(...) ---
+		size_t i = pos + 7;
+		int parenDepth = 1;
+
+		while (i < src.size() && parenDepth > 0) {
+			if (src[i] == '(') parenDepth++;
+			else if (src[i] == ')') parenDepth--;
+			i++;
+		}
+		if (parenDepth != 0) break;
+
+		// skip whitespace
+		size_t after = src.find_first_not_of(" \t\r\n", i);
+
+		// must be "buffer"
+		if (after == std::string::npos ||
+			src.compare(after, 6, "buffer") != 0) {
+			pos = i;
+			continue;
+			}
+
+		// find '{'
+		size_t braceStart = src.find('{', after);
+		if (braceStart == std::string::npos) break;
+
+		// --- match { ... } ---
+		size_t j = braceStart + 1;
+		int braceDepth = 1;
+
+		while (j < src.size() && braceDepth > 0) {
+			if (src[j] == '{') braceDepth++;
+			else if (src[j] == '}') braceDepth--;
+			j++;
+		}
+		if (braceDepth != 0) break;
+
+		// find ';' after closing '}'
+		size_t semicolon = src.find(';', j);
+		if (semicolon == std::string::npos) break;
+
+		size_t end = semicolon + 1;
+
+		result.push_back({
+			src.substr(start, end - start),
+			start,
+			end
+		});
+
+		pos = end;
+	}
+
+	return result;
 }
 
 std::string do_includes(const std::string& shader, std::map<fs::path, std::string>& open_shaders, const gmake::GMAKEConfig &config){
@@ -234,7 +301,7 @@ std::string do_includes(const std::string& shader, std::map<fs::path, std::strin
 	return rebuild;
 }
 
-void include_run(const fs::path& shader_directory, const gmake::GMAKEConfig &config){
+void include_run(const fs::path& shader_directory, const gmake::GMAKEConfig &config) {
 	std::map<fs::path, std::string> open_shader_files;
 	std::map<fs::path, std::string> open_include_files;
 
@@ -245,7 +312,7 @@ void include_run(const fs::path& shader_directory, const gmake::GMAKEConfig &con
 
 	for (const std::pair<const std::string, std::vector<fs::path>>& shader : config.ShaderPrograms) {
 		std::vector<fs::path> shaders = shader.second;
-		for (const fs::path &file : shaders){
+		for (const fs::path& file : shaders){
 			fs::path actual_file_path;
 
 			if (file.is_absolute()) {
@@ -255,166 +322,69 @@ void include_run(const fs::path& shader_directory, const gmake::GMAKEConfig &con
 			}
 
 			std::string shader_content = gmake::ReadFilePath(actual_file_path);
-		    for (const fs::path& standard_path : config.StandardExtensions){
-		        std::string path_string = standard_path.string();
-		        std::string standard_file_path_include = "#include " + path_string;
-		        shader_content = insertLine(shader_content, 1, standard_file_path_include);
-		    }
+			for (const fs::path& standard_path : config.StandardExtensions){
+				std::string path_string = standard_path.string();
+				std::string standard_file_path_include = "#include " + path_string;
+				shader_content = insertLine(shader_content, 1, standard_file_path_include);
+			}
 			std::string included_shader = do_includes(shader_content, open_shader_files, config);
-
+			std::vector<SSBOBlock> ssbo_blocks = extractSSBOs(included_shader);
+			for ( SSBOBlock& ssbo_block : ssbo_blocks) {
+				std::string ssbo_content = ssbo_block.text;
+				std::string target = "binding";
+				size_t pos = 0;
+				pos = ssbo_content.find(target);
+				uint64_t target_lenght = 7;
+				ASSERT_MSG(pos != std::string::npos, "binding must be in the return of find ssbo this is a bug");
+				size_t binding_pos = ssbo_content.find("binding");
+				ASSERT_MSG(binding_pos != std::string::npos, "binding not found");
+				size_t eq_pos = ssbo_content.find('=', binding_pos);
+				ASSERT_MSG(eq_pos != std::string::npos, "binding missing '='");
+				// find first non-space after '='
+				size_t i = eq_pos + 1;
+				while (i < ssbo_content.size() && std::isspace(static_cast<unsigned char>(ssbo_content[i]))) {
+					i++;
+				}
+				if (i >= ssbo_content.size()) {
+					continue;
+				}
+				// ✅ STOP if numeric binding
+				if (std::isdigit(static_cast<unsigned char>(ssbo_content[i]))) {
+					PRINT("Numeric binding found, skipping");
+					continue;
+				}
+				// ✅ Parse symbolic binding
+				if (std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
+					std::string header_name;
+					while (i < ssbo_content.size() && std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
+						header_name += ssbo_content[i++];
+					}
+					PRINT("Header: " + header_name);
+					if (i >= ssbo_content.size() || ssbo_content[i] != '.') {
+						ExceptionHandler.error(4, "Expected '.' after header");
+					}
+					i++; // skip '.'
+					std::string attribute;
+					while (i < ssbo_content.size() && std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
+						attribute += ssbo_content[i++];
+					}
+					PRINT("Attribute: " + attribute);
+					auto& mapping = config.SSBO_key_to_value.at(header_name);
+					uint64_t value = mapping.at(attribute);
+					std::string full_expr = header_name + "." + attribute;
+					ssbo_content = replace_first(ssbo_content, full_expr, std::to_string(value));
+					included_shader = replace_first(included_shader, ssbo_block.text, ssbo_content);
+				}
+			}
 			fs::path output_file = new_dir / file.filename();
-
 			open_include_files[output_file] = included_shader;
 		}
+
+		for (const std::pair<const fs::path, std::string> &write_file : open_include_files) {
+			PRINT("Writing to: " << write_file.first);
+			gmake::WriteFile(write_file.first, write_file.second);
+		}
 	}
-
-	for (const std::pair<const fs::path, std::string> &write_file : open_include_files) {
-		PRINT("Writing to: " << write_file.first);
-		gmake::WriteFile(write_file.first, write_file.second);
-	}
-}
-
-struct SSBOBlock {
-    std::string text;
-    size_t start;
-    size_t end; // one past the last character (like substr)
-};
-
-std::vector<SSBOBlock> extractSSBOs(const std::string& src) {
-    std::vector<SSBOBlock> result;
-    size_t pos = 0;
-
-    while ((pos = src.find("layout(", pos)) != std::string::npos) {
-        size_t start = pos;
-
-        // --- match layout(...) ---
-        size_t i = pos + 7;
-        int parenDepth = 1;
-
-        while (i < src.size() && parenDepth > 0) {
-            if (src[i] == '(') parenDepth++;
-            else if (src[i] == ')') parenDepth--;
-            i++;
-        }
-        if (parenDepth != 0) break;
-
-        // skip whitespace
-        size_t after = src.find_first_not_of(" \t\r\n", i);
-
-        // must be "buffer"
-        if (after == std::string::npos ||
-            src.compare(after, 6, "buffer") != 0) {
-            pos = i;
-            continue;
-            }
-
-        // find '{'
-        size_t braceStart = src.find('{', after);
-        if (braceStart == std::string::npos) break;
-
-        // --- match { ... } ---
-        size_t j = braceStart + 1;
-        int braceDepth = 1;
-
-        while (j < src.size() && braceDepth > 0) {
-            if (src[j] == '{') braceDepth++;
-            else if (src[j] == '}') braceDepth--;
-            j++;
-        }
-        if (braceDepth != 0) break;
-
-        // find ';' after closing '}'
-        size_t semicolon = src.find(';', j);
-        if (semicolon == std::string::npos) break;
-
-        size_t end = semicolon + 1;
-
-        result.push_back({
-            src.substr(start, end - start),
-            start,
-            end
-        });
-
-        pos = end;
-    }
-
-    return result;
-}
-
-void run_layout_bindings(const gmake::GMAKEConfig &config){
-    for (const std::pair<const std::string, std::vector<fs::path>>& shader : config.ShaderPrograms){
-        std::vector<fs::path> shaders = shader.second;
-        for (const fs::path& file : shaders){
-            fs::path actual_file_path;
-            actual_file_path = config.ProjectDir.parent_path() / "preprocessed_shaders" / file.filename();
-            std::string shader_content = gmake::ReadFilePath(actual_file_path);
-            std::vector<SSBOBlock> ssbo_blocks = extractSSBOs(shader_content);
-            for ( SSBOBlock& ssbo_block : ssbo_blocks){
-                std::string ssbo_content = ssbo_block.text;
-                std::string target = "binding";
-                size_t pos = 0;
-                pos = ssbo_content.find(target);
-                uint64_t target_lenght = 7;
-                ASSERT_MSG(pos != std::string::npos, "binding must be in the return of find ssbo this is a bug");
-                size_t binding_pos = ssbo_content.find("binding");
-                ASSERT_MSG(binding_pos != std::string::npos, "binding not found");
-
-                size_t eq_pos = ssbo_content.find('=', binding_pos);
-                ASSERT_MSG(eq_pos != std::string::npos, "binding missing '='");
-
-                // find first non-space after '='
-                size_t i = eq_pos + 1;
-                while (i < ssbo_content.size() && std::isspace(static_cast<unsigned char>(ssbo_content[i]))) {
-                    i++;
-                }
-
-                if (i >= ssbo_content.size()) {
-                    continue;
-                }
-
-                // ✅ STOP if numeric binding
-                if (std::isdigit(static_cast<unsigned char>(ssbo_content[i]))) {
-                    PRINT("Numeric binding found, skipping");
-                    continue;
-                }
-
-                // ✅ Parse symbolic binding
-                if (std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
-
-                    std::string header_name;
-                    while (i < ssbo_content.size() && std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
-                        header_name += ssbo_content[i++];
-                    }
-
-                    PRINT("Header: " + header_name);
-
-                    if (i >= ssbo_content.size() || ssbo_content[i] != '.') {
-                        ExceptionHandler.error(4, "Expected '.' after header");
-                    }
-
-                    i++; // skip '.'
-
-                    std::string attribute;
-                    while (i < ssbo_content.size() && std::isalpha(static_cast<unsigned char>(ssbo_content[i])) || static_cast<unsigned char>(ssbo_content[i]) == '_') {
-                        attribute += ssbo_content[i++];
-                    }
-
-                    PRINT("Attribute: " + attribute);
-
-                    auto& mapping = config.SSBO_key_to_value.at(header_name);
-                    uint64_t value = mapping.at(attribute);
-
-                    std::string full_expr = header_name + "." + attribute;
-
-                    ssbo_content = replace_first(ssbo_content, full_expr, std::to_string(value));
-                    shader_content = replace_first(shader_content, ssbo_block.text, ssbo_content);
-                }
-                PRINT("gh");
-                fs::path parent_actual_file_path = config.ProjectDir.parent_path();
-                gmake::WriteFile(parent_actual_file_path / "preprocessed_shaders" / file, shader_content); //preprocessed_shaders
-            }
-        }
-    }
 }
 
 std::vector<std::string> make_args(const std::vector<gmake::IdentNode>& args){
@@ -431,7 +401,7 @@ int main(int argc, char* argv[]) {
 	    std::cout << current_dir << std::endl;
 	    char* gmake_file_path = argv[1];
 	    std::string gmake_file = gmake::readFile(gmake_file_path);
-	    std::vector<std::unique_ptr<gmake::ASTNode>> nodes = build_ast(gmake_file);
+	    std::vector<gmake::Node> nodes = build_ast(gmake_file);
 	    gmake::GMAKEConfig config = gmake::GMAKEConfig();
 	    std::vector<std::string> flags;
 	    for (int i = 2; i < argc; i++){
@@ -462,19 +432,23 @@ int main(int argc, char* argv[]) {
 	    if (config.debug){
 	        ExceptionHandler.set_debug(true);
 	    }
-	    for (const std::unique_ptr<gmake::ASTNode>& node : nodes){
-	        if (dynamic_cast<gmake::FunctionNode*>(node.get())){
-                auto function = dynamic_cast<gmake::FunctionNode*>(node.get());
-                gmake::IdentNode function_name = function->Ident;
-	            std::string name_check = function_name.Ident;
-	            std::vector<gmake::IdentNode> function_args = function->Args;
-	            std::vector<std::string> Args = make_args(function_args);
-	            config = runGMAKEFunction(name_check, Args, config);
-	        }
-	    }
+	    gmake::Node program_node_maybe = nodes.at(nodes.size() - 1);
+	    gmake::ProgramNode program = std::get<gmake::ProgramNode>(program_node_maybe);
+        for (const size_t& function_node : program.Nodes){
+            gmake::Node function_node_maybe = nodes.at(function_node);
+            gmake::FunctionNode function = std::get<gmake::FunctionNode>(function_node_maybe);
+            std::vector<size_t> ident_node_pos = function.ArgsNew;
+            std::vector<gmake::IdentNode> function_args = {};
+            for (const size_t& node_pos : ident_node_pos){
+                gmake::IdentNode ident_node = std::get<gmake::IdentNode>(nodes.at(node_pos));
+                function_args.push_back(ident_node);
+            }
+            std::vector<std::string> Args = make_args(function_args);
+            std::string function_name = function.Ident.Ident;
+            config = runGMAKEFunction(function_name, Args, config);
+        }
 	    std::cout << config.ProjectDir << std::endl;
 	    include_run("path", config);
-	    run_layout_bindings(config);
 	    //ssbo_layout_bindings();
 	}
 	else{

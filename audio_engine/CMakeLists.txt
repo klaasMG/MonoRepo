@@ -3,14 +3,10 @@ project(AudioEngine)
 
 set(CMAKE_CXX_STANDARD 23)
 
-#add_library(AudioEngine src/audio_engine.cpp
-#        vendor/miniaudio/miniaudio.h
-#        src/audio_engine.h
-#)
-add_executable(AudioEngine src/audio_engine.cpp
+add_library(AudioEngine src/audio_engine.cpp
         vendor/miniaudio/miniaudio.h
-        src/audio_engine.cpp
-        src/main.cpp)
+        src/audio_engine.h
+)
 
 target_include_directories(AudioEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(AudioEngine PRIVATE ${CMAKE_SOURCE_DIR})

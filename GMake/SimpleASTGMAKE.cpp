@@ -7,18 +7,18 @@ ASTGMAKE::ASTGMAKE(const std::vector<Token> &input_tokens){
     currentToken = 0;
 }
 
-std::vector<std::unique_ptr<ASTNode>> ASTGMAKE::getNodes(){
-    std::vector<std::unique_ptr<ASTNode>> nodes;
+std::vector<Node> ASTGMAKE::getNodes(){
+    std::vector<Node> nodes = {};
+    ProgramNode program = ProgramNode{};
     while (currentToken < tokens.size()){
         Token token = getNextToken();
         if (token.type == TokenType::Identifier){
-            auto node = std::make_unique<FunctionNode>();
+            auto node = FunctionNode();
             Token left_bracket = getNextToken();
             if (left_bracket.type != TokenType::LeftBracket){
                 throw_ast_error("Expected '(' after function name");
             }
             bool func_end = false;
-            std::vector<IdentNode> func_args;
             while (!func_end){
                 Token next_token = getNextToken();
                 if (next_token.type == TokenType::Identifier || next_token.type == TokenType::Slash){
@@ -44,7 +44,9 @@ std::vector<std::unique_ptr<ASTNode>> ASTGMAKE::getNodes(){
                             throw_ast_error("Expected a 'identifier' or a ',' for end argument");
                         }
                     }
-                    func_args.push_back(ident_node);
+                    size_t node_index = nodes.size();
+                    nodes.push_back(ident_node);
+                    node.ArgsNew.push_back(node_index);
                 }
                 else if (next_token.type == TokenType::RightBracket){
                     func_end = true;
@@ -52,14 +54,16 @@ std::vector<std::unique_ptr<ASTNode>> ASTGMAKE::getNodes(){
             }
             IdentNode identifier;
             identifier.Ident = token.value;
-            node->Ident = identifier;
-            node->Args = func_args;
+            node.Ident = identifier;
+            size_t node_index = nodes.size();
+            program.Nodes.push_back(node_index);
             nodes.push_back(std::move(node));
         }
         else if (token.type != TokenType::Semicolon){
             throw_ast_error("Expected ';' after function name");
         }
     }
+    nodes.push_back(program);
     return nodes;
 }
 

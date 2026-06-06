@@ -13,19 +13,19 @@
 #include <iostream>
 
 namespace gmake {
-    struct ASTNode {
-        virtual
-        ~ASTNode() = default;
-    };
-
-    struct IdentNode : public ASTNode {
+    struct IdentNode {
         std::string Ident;
     };
-
-    struct FunctionNode : public ASTNode {
+    struct FunctionNode {
         IdentNode Ident;
         std::vector<IdentNode> Args;
+        std::vector<size_t> ArgsNew;
     };
+
+    struct ProgramNode {
+        std::vector<size_t> Nodes;
+    };
+    using Node = std::variant<IdentNode, FunctionNode, ProgramNode>;
 
     class ASTGMAKE {
         std::vector<Token> tokens;
@@ -34,7 +34,7 @@ namespace gmake {
     public:
         ASTGMAKE(const std::vector<Token>& input_tokens);
 
-        std::vector<std::unique_ptr<ASTNode>> getNodes();
+        std::vector<Node> getNodes();
 
     private:
         Token getNextToken();
