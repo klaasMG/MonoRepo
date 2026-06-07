@@ -2,21 +2,22 @@
 #define EVENT_STRUCT_TOKENS_H
 #include <string>
 
+#include "LiteralTypes.h"
+
 namespace gmake {
     enum class TokenType : char{
-        Identifier = 0,
-        Number = 1,
+        LITERAL = 1,
         LeftBracket = '(',
         RightBracket = ')',
         Comma = ',',
         Semicolon = ';',
-        Slash = '/',
         None = '\0'
     };
 
     struct Token{
         TokenType type;
         std::string value;
+        std::vector<LiteralType> literal_types;
     };
 }
 

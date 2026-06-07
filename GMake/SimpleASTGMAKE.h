@@ -1,21 +1,35 @@
 #ifndef EVENT_STRUCT_SIMPLEASTGMAKE_H
 #define EVENT_STRUCT_SIMPLEASTGMAKE_H
 
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <stdexcept>
 #include <string>
 #include <variant>
 #include <vector>
 #include "Tokens.h"
+#include "LiteralTypes.h"
 #include <filesystem>
-#include <iostream>
 
 namespace gmake {
+
+    template <typename T>
+    bool contains_on_vector(const std::vector<T>& vector, const T& element) {
+        bool found = false;
+        for (const T& element_vec : vector) {
+            if (element_vec == element) {
+                found = true;
+            }
+        }
+        return found;
+    }
+
+    struct LiteralNode {
+        std::string Ident;
+        std::vector<LiteralType> LiteralTypes;
+    };
+
     struct IdentNode {
         std::string Ident;
     };
+
     struct FunctionNode {
         IdentNode Ident;
         std::vector<IdentNode> Args;
@@ -25,7 +39,7 @@ namespace gmake {
     struct ProgramNode {
         std::vector<size_t> Nodes;
     };
-    using Node = std::variant<IdentNode, FunctionNode, ProgramNode>;
+    using Node = std::variant<IdentNode, FunctionNode, ProgramNode, LiteralNode>;
 
     class ASTGMAKE {
         std::vector<Token> tokens;

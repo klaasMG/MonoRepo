@@ -5,6 +5,9 @@
 #include "GMakeTypes.h"
 #include "file_utils.h"
 #include "string_utils.h"
+#include "LiteralTypes.h"
+#include "GmakeFunctionParser.h"
+#include "ExceptionHandler.h"
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -13,11 +16,11 @@
 #include <ranges>
 #include <unordered_set>
 #include <windows.h>
+#define GMAKE_VERSION "1.0.0"
 namespace fs = std::filesystem;
 
 fs::path current_dir;
-bool debug = false;
-GMAKE_EXCEPTION ExceptionHandler = GMAKE_EXCEPTION{debug};
+
 std::unordered_set<std::string_view> allowed_flags = {"-debug",};
 
 std::string run_command(const fs::path& cmd_path) {
@@ -87,12 +90,48 @@ std::string run_command(const fs::path& cmd_path) {
     return output;
 }
 
-gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector<std::string>& function_args, gmake::GMAKEConfig config) {
-    ExceptionHandler.add_to_call_stack(function_name);
-	switch (gmake::parseFunction(function_name)) {
-	case gmake::GMakeFunction::SET_PROJECT_DIRECTORY: {
-			fs::path project_dir = function_args[0];
+bool check_param_types(const std::vector<gmake::LiteralType>& allowed_arg_types, const std::vector<std::vector<gmake::LiteralType>>& given_arg_types) {
+	std::cout << allowed_arg_types.size() << "function" << given_arg_types.size();
 
+	if (allowed_arg_types.size() != given_arg_types.size()) {
+		return false;
+	}
+	bool result = true;
+	for (int i = 0; i < allowed_arg_types.size(); ++i) {
+		gmake::LiteralType allowed_arg_type = allowed_arg_types.at(i);
+		const std::vector<gmake::LiteralType>& given_arg_type = given_arg_types.at(i);
+		bool contains = gmake::contains_on_vector(given_arg_type, allowed_arg_type);
+		if (contains) {
+			return result;
+		}
+		std::cout << result << std::endl;
+	}
+	return result;
+};
+
+gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std::vector<gmake::LiteralNode>& function_args, gmake::GMAKEConfig config,
+	const std::map<std::string, std::vector<gmake::LiteralType>>& functions_allowed_arg_types) {
+	PRINT(function_name);
+	int r = 0;
+	for (const gmake::LiteralNode& function_arg : function_args) {
+		std::cout << function_arg.Ident << std::endl;
+		std::cout << r << std::endl;
+		r++;
+	}
+	gmake::ExceptionHandler.add_to_call_stack(function_name);
+	gmake::GMakeFunction func_name = gmake::parseFunction(function_name);
+	std::vector<std::vector<gmake::LiteralType>> literal_type_vector = {};
+    for (const gmake::LiteralNode& function_arg : function_args) {
+	    literal_type_vector.push_back(function_arg.LiteralTypes);
+    }
+	bool args_allowed = check_param_types(functions_allowed_arg_types.at(function_name), literal_type_vector);
+	PRINT("hk");
+    if (!args_allowed) {
+	    throw std::runtime_error("this is not allowed");
+    }
+	switch (func_name) {
+	case gmake::GMakeFunction::SET_PROJECT_DIRECTORY: {
+			fs::path project_dir = function_args.at(0).Ident;
 			if (project_dir.is_absolute()) {
 				config.ProjectDir = project_dir;
 			}
@@ -101,12 +140,11 @@ gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std:
 			}
 			break;
 	}
-
 	case gmake::GMakeFunction::SET_PROGRAM: {
-			const std::string& shader_program = function_args[0];
+			const std::string& shader_program = function_args.at(0).Ident;
 			std::vector<fs::path> shaders;
-			for (const std::string& arg : function_args | std::views::drop(1)) {
-				fs::path path_arg = arg;
+			for (const gmake::LiteralNode& arg : function_args | std::views::drop(1)) {
+				fs::path path_arg = arg.Ident;
 				shaders.emplace_back(path_arg);
 			}
 			config.ShaderPrograms[shader_program] = shaders;
@@ -114,8 +152,8 @@ gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std:
 	}
 
 	case gmake::GMakeFunction::EXTEND_STANDARD:{
-	    for (const std::string& arg : function_args){
-	        config.StandardExtensions.emplace_back(arg);
+	    for (const gmake::LiteralNode& arg : function_args){
+	        config.StandardExtensions.emplace_back(arg.Ident);
 	    }
 	    break;
 	}
@@ -123,9 +161,9 @@ gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std:
 	case gmake::GMakeFunction::SSBO_LAYOUT_BINDING:{
 	    PRINT(function_args.size());
         if (function_args.empty()){
-            ExceptionHandler.error(2,"No program given");
+	        gmake::ExceptionHandler.error(2,"No program given");
         }
-        const std::string& program_name = function_args[0];
+        const std::string& program_name = function_args.at(0).Ident;
 
         std::cerr << "SSBO layout binding: " << std::to_string(program_name.size()) << std::endl;
         PRINT(program_name);
@@ -164,7 +202,7 @@ gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std:
 	                key = trim(key);
 	                uint64_t value = std::stoull(kv.second);
                     if (mapping.contains(key)){
-                        ExceptionHandler.error(2,"Key already exists");
+	                    gmake::ExceptionHandler.error(2,"Key already exists");
                     }
 	                mapping.insert_or_assign(key, value);
 	            }
@@ -175,8 +213,13 @@ gmake::GMAKEConfig runGMAKEFunction(const std::string& function_name, const std:
 	    break;
 	}
 
+	case gmake::GMakeFunction::SET_MINIMAL_VERSION: {
+		throw std::runtime_error("not yet");
+		break;
+	}
+
 	case gmake::GMakeFunction::UNKNOWN:
-		ExceptionHandler.error(1, "Function is not found" + function_name);
+		gmake::ExceptionHandler.error(1, "Function is not found" + function_name);
 		break;
 	}
 
@@ -361,7 +404,7 @@ void include_run(const fs::path& shader_directory, const gmake::GMAKEConfig &con
 					}
 					PRINT("Header: " + header_name);
 					if (i >= ssbo_content.size() || ssbo_content[i] != '.') {
-						ExceptionHandler.error(4, "Expected '.' after header");
+						gmake::ExceptionHandler.error(4, "Expected '.' after header");
 					}
 					i++; // skip '.'
 					std::string attribute;
@@ -387,16 +430,16 @@ void include_run(const fs::path& shader_directory, const gmake::GMAKEConfig &con
 	}
 }
 
-std::vector<std::string> make_args(const std::vector<gmake::IdentNode>& args){
-	std::vector<std::string> arg_string;
-	for (const gmake::IdentNode& arg : args){
-		arg_string.push_back(arg.Ident);
-	}
-	return arg_string;
+fs::path get_exe_dir() {
+	char buffer[MAX_PATH];
+	GetModuleFileNameA(nullptr, buffer, MAX_PATH);
+	return std::filesystem::path(buffer).parent_path();
 }
 
 int main(int argc, char* argv[]) {
 	if (argc >= 2){
+		fs::path tool_dir = get_exe_dir();
+		tool_dir = fs::absolute(tool_dir);
 	    current_dir = fs::current_path();
 	    std::cout << current_dir << std::endl;
 	    char* gmake_file_path = argv[1];
@@ -430,22 +473,22 @@ int main(int argc, char* argv[]) {
 	        }
 	    }
 	    if (config.debug){
-	        ExceptionHandler.set_debug(true);
+		    gmake::ExceptionHandler.set_debug(true);
 	    }
+		std::map<std::string, std::vector<gmake::LiteralType>> functions_allowed_arg_types = gmake::function_parameters_generator(tool_dir);
 	    gmake::Node program_node_maybe = nodes.at(nodes.size() - 1);
 	    gmake::ProgramNode program = std::get<gmake::ProgramNode>(program_node_maybe);
         for (const size_t& function_node : program.Nodes){
             gmake::Node function_node_maybe = nodes.at(function_node);
             gmake::FunctionNode function = std::get<gmake::FunctionNode>(function_node_maybe);
             std::vector<size_t> ident_node_pos = function.ArgsNew;
-            std::vector<gmake::IdentNode> function_args = {};
+            std::vector<gmake::LiteralNode> function_args = {};
             for (const size_t& node_pos : ident_node_pos){
-                gmake::IdentNode ident_node = std::get<gmake::IdentNode>(nodes.at(node_pos));
+                gmake::LiteralNode ident_node = std::get<gmake::LiteralNode>(nodes.at(node_pos));
                 function_args.push_back(ident_node);
             }
-            std::vector<std::string> Args = make_args(function_args);
             std::string function_name = function.Ident.Ident;
-            config = runGMAKEFunction(function_name, Args, config);
+            config = runGMAKEFunction(function_name, function_args, config, functions_allowed_arg_types);
         }
 	    std::cout << config.ProjectDir << std::endl;
 	    include_run("path", config);

@@ -14,6 +14,7 @@ namespace gmake {
         SET_PROGRAM,
         EXTEND_STANDARD,
         SSBO_LAYOUT_BINDING,
+        SET_MINIMAL_VERSION,
         UNKNOWN
     };
 

@@ -17,12 +17,16 @@ add_executable(GMake build_dependecy_graph.cpp
         file_utils.h
         file_utils.cpp
         GMakeTypes.h
-        GMakeTypes.cpp)
+        GMakeTypes.cpp
+        GmakeFunctionParser.cpp
+        GmakeFunctionParser.h
+        LiteralTypes.h
+        ExceptionHandler.h)
 
 target_link_libraries(GMake PRIVATE common_lib)
 
 set_target_properties(GMake PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY
-        ${CMAKE_SOURCE_DIR})
+        ${CMAKE_SOURCE_DIR}/tooling/gmake)
 
 link_compiler_library_statically(GMake)
