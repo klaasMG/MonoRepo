@@ -1,6 +1,6 @@
 #include "SimpleASTGMAKE.h"
-
 #include <iostream>
+#include "ExceptionHandler.h"
 
 namespace gmake {
 
@@ -10,6 +10,7 @@ ASTGMAKE::ASTGMAKE(const std::vector<Token> &input_tokens){
 }
 
 std::vector<Node> ASTGMAKE::getNodes(){
+    bool is_incorrect = false;
     std::vector<Node> nodes = {};
     ProgramNode program = ProgramNode{};
     int p = 8;
@@ -21,27 +22,73 @@ std::vector<Node> ASTGMAKE::getNodes(){
             for (LiteralType literal_type : token_literal_types) {
                 std::cout << static_cast<int>(literal_type) << std::endl;
             }
-            if (token_literal_types.size() == 0) {
+            if (token_literal_types.empty()) {
                 std::cout << "well great" << std::endl;
             }
-            std::cout << p << std::endl;
             if (!contains_on_vector(token_literal_types, LiteralType::NAME)) {
-                throw std::runtime_error("Expected name for literal type");
+                std::cout << "Expected name for literal type" << std::endl;
+                std::vector<Token> error_tokens = {token};
+                ErrorNode error_node = ErrorNode{};
+                is_incorrect = true;
+                bool is_needed = true;
+                while (is_needed) {
+                    Token tok = getNextToken();
+                    if (tok.type == TokenType::LITERAL && contains_on_vector(tok.literal_types, LiteralType::NAME)) {
+                        is_needed = false;
+                        error_node.Tokens = error_tokens;
+                        nodes.push_back(error_node);
+                        token = tok;
+                    }
+                    error_tokens.push_back(tok);
+                }
             }
             FunctionNode node = FunctionNode();
+            std::vector<Token> node_tokens = {};
             Token left_bracket = getNextToken();
             if (left_bracket.type != TokenType::LeftBracket){
-                throw_ast_error("Expected '(' after function name");
+                std::cout << "Expected '(' after function name" << std::endl;
+                std::vector<Token> error_tokens = {left_bracket};
+                ErrorNode error_node = ErrorNode{};
+                is_incorrect = true;
+                bool is_needed = true;
+                while (is_needed) {
+                    Token tok = getNextToken();
+                    if (tok.type == TokenType::LeftBracket) {
+                        is_needed = false;
+                        error_node.Tokens = error_tokens;
+                        nodes.push_back(error_node);
+                    }
+                    error_tokens.push_back(tok);
+                }
             }
+            node_tokens.push_back(left_bracket);
             bool func_end = false;
             while (!func_end){
                 Token next_token = getNextToken();
                 if (next_token.type == TokenType::LITERAL){
                     if (!contains_on_vector(next_token.literal_types, LiteralType::NAME) && !contains_on_vector(next_token.literal_types, LiteralType::VERSION)
                         && !contains_on_vector(next_token.literal_types, LiteralType::PATH)) {
-                        throw_ast_error("not a valid argument type");
+                        std::cout << "not a valid argument type" << std::endl;
+                        std::vector<Token> error_tokens = {next_token};
+                        ErrorNode error_node = ErrorNode{};
+                        is_incorrect = true;
+                        bool is_needed = true;
+                        while (is_needed) {
+                            Token tok = getNextToken();
+                            if (tok.type == TokenType::LITERAL) {
+                                if (contains_on_vector(tok.literal_types, LiteralType::NAME) || contains_on_vector(tok.literal_types, LiteralType::VERSION)
+                                    || contains_on_vector(tok.literal_types, LiteralType::PATH)) {
+                                    is_needed = false;
+                                    error_node.Tokens = error_tokens;
+                                    nodes.push_back(error_node);
+                                    next_token = tok;
+                                }
+                            }
+                            error_tokens.push_back(tok);
+                        }
                     }
                     LiteralNode ident_node;
+                    ident_node.Tokens = {next_token};
                     ident_node.Ident = next_token.value;
                     ident_node.LiteralTypes = next_token.literal_types;
                     size_t node_index = nodes.size();
@@ -50,29 +97,40 @@ std::vector<Node> ASTGMAKE::getNodes(){
                 }
                 else if (next_token.type == TokenType::RightBracket){
                     func_end = true;
+                    node_tokens.push_back(next_token);
                 }
             }
             IdentNode identifier;
             identifier.Ident = token.value;
+            identifier.Tokens = {token};
             node.Ident = identifier;
+            node.Tokens = node_tokens;
             size_t node_index = nodes.size();
+            program.Tokens = {};
             program.Nodes.push_back(node_index);
             nodes.push_back(std::move(node));
         }
         else if (token.type != TokenType::Semicolon){
-            std::cout << token.value << std::endl;
-            std::cout << static_cast<int>(token.type) << "this" << std::endl;
-            std::cout << static_cast<int>(TokenType::LITERAL) << std::endl;
-            std::cout << static_cast<int>(TokenType::None) << std::endl;
-            std::cout << static_cast<int>(TokenType::Comma) << std::endl;
-            std::cout << static_cast<int>(TokenType::LeftBracket) << "llk" << std::endl;
-            std::cout << static_cast<int>(TokenType::RightBracket) << std::endl;
-            std::cout << static_cast<int>(TokenType::Semicolon) << std::endl;
-
-            throw_ast_error("Expected ';' after function name");
+            std::cout << "Expected ';' after function name" << std::endl;
+            std::vector<Token> error_tokens = {token};
+            ErrorNode error_node = ErrorNode{};
+            is_incorrect = true;
+            bool is_needed = true;
+            while (is_needed) {
+                Token tok = getNextToken();
+                if (tok.type == TokenType::Semicolon) {
+                    is_needed = false;
+                    error_node.Tokens = error_tokens;
+                    nodes.push_back(error_node);
+                }
+                error_tokens.push_back(tok);
+            }
         }
     }
     nodes.push_back(program);
+    if (is_incorrect) {
+        throw std::runtime_error("Parser did fail");
+    }
     return nodes;
 }
 
@@ -82,13 +140,8 @@ Token ASTGMAKE::getNextToken(){
         currentToken++;
         return token;
     }
-    throw_ast_error("EOF error");
+    throw std::runtime_error("AOF errpr");
     return Token{};
-}
-
-void ASTGMAKE::throw_ast_error(const std::string& message){
-    std::cerr << "ast error" << std::endl;
-    throw std::runtime_error(message);
 }
 
 }

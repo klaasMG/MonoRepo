@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
+set(CMAKE_CXX_STANDARD 23)
 project(Superbuild LANGUAGES CXX)
+include(ProcessorCount)
+ProcessorCount(N)
+set(ENV{CMAKE_BUILD_PARALLEL_LEVEL} ${N})
 
 function(link_compiler_library_statically target)
     if(MINGW)

@@ -18,8 +18,15 @@ namespace gmake {
         UNKNOWN
     };
 
+    enum class DebugType {
+        BUILD,
+        DEBUG,
+        NONE,
+    };
+
     struct GMAKEConfig {
         bool debug = false;
+        DebugType Build = DebugType::NONE;
         fs::path ProjectDir;
         std::map<std::string, std::vector<fs::path>> ShaderPrograms;
         std::vector<fs::path> StandardExtensions;

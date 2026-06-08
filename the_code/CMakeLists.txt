@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 project(event_struct LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 23)
-
 # Find Python (for headers and libs)
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 

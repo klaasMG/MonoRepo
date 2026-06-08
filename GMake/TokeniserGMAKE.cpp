@@ -1,5 +1,7 @@
 #include "TokeniserGMAKE.h"
 
+#include "ExceptionHandler.h"
+
 namespace gmake {
     TokeniserGMAKE::TokeniserGMAKE(const std::string& input) {
         file = input;
@@ -51,7 +53,7 @@ namespace gmake {
                     num.push_back(c);
                 }
                 if (peek_char() != '.') {
-                    throw std::runtime_error("no float support yet");
+                    ExceptionHandler.error(34 , "no float support yet");
                 }
                 char dot2 = consume_char();
                 num.push_back(dot2);
@@ -60,7 +62,7 @@ namespace gmake {
                     num.push_back(c);
                 }
                 if (peek_char() != '.') {
-                    throw std::runtime_error("unknown type");
+                    ExceptionHandler.error(34 , "unknown type");
                 }
                 char dot3 = consume_char();
                 num.push_back(dot3);

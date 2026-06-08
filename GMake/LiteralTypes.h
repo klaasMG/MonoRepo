@@ -6,5 +6,6 @@ namespace gmake {
         VERSION,
         PATH,
         NAME,
+        CONTINUE,
     };
 }

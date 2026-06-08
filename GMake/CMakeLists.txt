@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 project(GMake LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 23)
+add_subdirectory(glsl)
 
 # Header-only utility library
 add_library(utils INTERFACE)
@@ -21,9 +20,11 @@ add_executable(GMake build_dependecy_graph.cpp
         GmakeFunctionParser.cpp
         GmakeFunctionParser.h
         LiteralTypes.h
-        ExceptionHandler.h)
+        ExceptionHandler.h
+        GmakeImplementationPhase.h
+        GmakeConfigPhase.h)
 
-target_link_libraries(GMake PRIVATE common_lib)
+target_link_libraries(GMake PRIVATE common_lib GLSL)
 
 set_target_properties(GMake PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY

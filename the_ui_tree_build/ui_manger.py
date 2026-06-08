@@ -7,10 +7,8 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
 from pathlib import Path
 from FontManager import FontManager
-from input_manager import InputManager, Action, ActionType, InputRegistry, FocusManager, Keys, Buttons, check_func_rules, KeyPositionRegistry
+from input_manager import InputManager, Action, ActionType, InputRegistry, FocusManager, Keys, Buttons, check_func_rules, KeyPositionRegistry, KeyState
 from typing import Any, Callable
-
-from the_ui_tree_build.input_manager import KeyState
 from widget_data import WidgetDataType
 from event_system import event_system, EventQueue, EventTypeEnum
 from threading import Lock, Thread
@@ -226,8 +224,8 @@ class GSGUiManager:
                 self.font_manager.render_text(text, "Font", text_heigt, self.next_text_id)
                 self.next_text_id += 1
             else:
-                id = self.text_ids[key]
-                self.widget_data[WidgetDataType.TEXT_ID][widget_id] = id
+                thing_id = self.text_ids[key]
+                self.widget_data[WidgetDataType.TEXT_ID][widget_id] = thing_id
         elif data[13] == "asset":
             self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id
             self.asset_ids[data[12]] = self.next_asset_id
@@ -259,8 +257,8 @@ class GSGUiManager:
                 self.font_manager.render_text(text, "Font", text_heigt, self.next_text_id)
                 self.next_text_id += 1
             else:
-                id = self.text_ids[key]
-                self.widget_data[WidgetDataType.TEXT_ID][widget_id] = id
+                thing_id = self.text_ids[key]
+                self.widget_data[WidgetDataType.TEXT_ID][widget_id] = thing_id
         elif data[13] == "asset":
             self.widget_data[WidgetDataType.ASSETS_ID][widget_id] = self.next_asset_id
             self.asset_ids[data[12]] = self.next_asset_id

@@ -24,22 +24,30 @@ namespace gmake {
     struct LiteralNode {
         std::string Ident;
         std::vector<LiteralType> LiteralTypes;
+        std::vector<Token> Tokens;
     };
 
     struct IdentNode {
         std::string Ident;
+        std::vector<Token> Tokens;
     };
 
     struct FunctionNode {
         IdentNode Ident;
         std::vector<IdentNode> Args;
         std::vector<size_t> ArgsNew;
+        std::vector<Token> Tokens;
+    };
+
+    struct ErrorNode {
+        std::vector<Token> Tokens;
     };
 
     struct ProgramNode {
         std::vector<size_t> Nodes;
+        std::vector<Token> Tokens;
     };
-    using Node = std::variant<IdentNode, FunctionNode, ProgramNode, LiteralNode>;
+    using Node = std::variant<IdentNode, FunctionNode, ProgramNode, LiteralNode, ErrorNode>;
 
     class ASTGMAKE {
         std::vector<Token> tokens;
@@ -52,7 +60,6 @@ namespace gmake {
 
     private:
         Token getNextToken();
-        static void throw_ast_error(const std::string& message);
     };
 }
 
