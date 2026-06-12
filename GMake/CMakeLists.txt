@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 project(GMake LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 23)
+add_subdirectory(glsl)
 
 # Header-only utility library
 add_library(utils INTERFACE)
-
-
 
 add_executable(GMake build_dependecy_graph.cpp
         SimpleASTGMAKE.h
@@ -17,17 +14,19 @@ add_executable(GMake build_dependecy_graph.cpp
         file_utils.h
         file_utils.cpp
         GMakeTypes.h
-        GMakeTypes.cpp)
+        GMakeTypes.cpp
+        GmakeFunctionParser.cpp
+        GmakeFunctionParser.h
+        LiteralTypes.h
+        ExceptionHandler.h
+        GmakeImplementationPhase.h
+        GmakeConfigPhase.h)
 
-target_link_libraries(GMake PRIVATE common_lib)
+target_link_libraries(GMake PRIVATE common_lib GLSL)
+target_link_libraries(GMake PRIVATE fmt::fmt)
 
 set_target_properties(GMake PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY
-        ${CMAKE_SOURCE_DIR})
+        ${CMAKE_SOURCE_DIR}/tooling/gmake)
 
-if(MINGW)
-    target_link_libraries(GMake PRIVATE -static-libgcc -static-libstdc++ -static)
-endif()
-if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
+link_compiler_library_statically(GMake)

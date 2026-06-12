@@ -78,12 +78,12 @@ TextWriteHandle::~TextWriteHandle() {
     }
 }
 
-Result<std::string&> TextWriteHandle::get() {
+Result<std::string*, BaseErrorType> TextWriteHandle::get() {
     if (data) {
-        return *data;
+        return Result<std::string*, BaseErrorType>(data);
     }
-    ErrorType error = ErrorType::FILE_DATA_ERROR;
-    Result result = Result<std::string&>(error);
+    BaseErrorType error = BaseErrorType::FILE_DATA_ERROR;
+    Result result = Result<std::string*, BaseErrorType>(error);
     return result;
 }
 
@@ -159,12 +159,12 @@ BinaryWriteHandle& BinaryWriteHandle::operator=(BinaryWriteHandle&& other) noexc
     return *this;
 }
 
-Result<std::vector<uint8_t>&> BinaryWriteHandle::get() {
+Result<std::vector<uint8_t>*, BaseErrorType> BinaryWriteHandle::get() {
     if (data) {
-        return *data;
+        return Result<std::vector<uint8_t>*, BaseErrorType>(data);
     }
-    ErrorType error = ErrorType::FILE_DATA_ERROR;
-    Result result = Result<std::vector<uint8_t>&>(error);
+    BaseErrorType error = BaseErrorType::FILE_DATA_ERROR;
+    Result result = Result<std::vector<uint8_t>*, BaseErrorType>(error);
     return result;
 }
 
@@ -176,11 +176,11 @@ BinaryWriteHandle::~BinaryWriteHandle() {
     }
 }
 
-Result<TextHandle> FileManager::reqeust_text_file(const fs::path& paths) {
+Result<TextHandle, BaseErrorType> FileManager::reqeust_text_file(const fs::path& paths) {
     fs::path abs_paths = fs::absolute(paths);
     if (write_files.contains(abs_paths)) {
-        ErrorType error = ErrorType::FILE_IN_USE;
-        Result text_result = Result<TextHandle>(error);
+        BaseErrorType error = BaseErrorType::FILE_IN_USE;
+        Result text_result = Result<TextHandle, BaseErrorType>(error);
         return text_result;
     }
     std::string data;
@@ -190,8 +190,8 @@ Result<TextHandle> FileManager::reqeust_text_file(const fs::path& paths) {
 
         // ✅ FIX 3: file check added
         if (!file) {
-            ErrorType error = ErrorType::FILE_NOT_FOUND;
-            Result text_result = Result<TextHandle>(error);
+            BaseErrorType error = BaseErrorType::FILE_NOT_FOUND;
+            Result text_result = Result<TextHandle, BaseErrorType>(error);
             return text_result;
         }
 
@@ -219,7 +219,7 @@ Result<TextHandle> FileManager::reqeust_text_file(const fs::path& paths) {
     // ✅ FIX 1: replace insert with assignment
     text_files[abs_paths] = data;
 
-    return  Result{TextHandle(this, abs_paths, &text_files[abs_paths])};
+    return Result<TextHandle, BaseErrorType>(TextHandle(this, abs_paths, &text_files[abs_paths]));
 }
 
 void FileManager::return_text_file(const fs::path& paths) {
@@ -241,11 +241,11 @@ void FileManager::return_text_file(const fs::path& paths) {
     }
 }
 
-Result<BinaryHandle> FileManager::request_binary_file(const fs::path& path) {
+Result<BinaryHandle, BaseErrorType> FileManager::request_binary_file(const fs::path& path) {
     fs::path abs_paths = fs::absolute(path);
     if (write_files.contains(abs_paths)) {
-        ErrorType error = ErrorType::FILE_IN_USE;
-        Result text_result = Result<BinaryHandle>(error);
+        BaseErrorType error = BaseErrorType::FILE_IN_USE;
+        Result text_result = Result<BinaryHandle, BaseErrorType>(error);
         return text_result;
     }
     std::vector<uint8_t> data;
@@ -254,8 +254,8 @@ Result<BinaryHandle> FileManager::request_binary_file(const fs::path& path) {
         std::ifstream file(abs_paths, std::ios::binary);
 
         if (!file) {
-            ErrorType error = ErrorType::FILE_NOT_FOUND;
-            Result text_result = Result<BinaryHandle>(error);
+            BaseErrorType error = BaseErrorType::FILE_NOT_FOUND;
+            Result text_result = Result<BinaryHandle, BaseErrorType>(error);
             return text_result;
         }
 
@@ -279,7 +279,7 @@ Result<BinaryHandle> FileManager::request_binary_file(const fs::path& path) {
     assets_opened[abs_paths] = num_times;
     binary_files[abs_paths] = data;
 
-    return Result{BinaryHandle(this, abs_paths, &binary_files[abs_paths])};
+    return Result<BinaryHandle, BaseErrorType>(BinaryHandle(this, abs_paths, &binary_files[abs_paths]));
 }
 
 void FileManager::return_binary_file(const fs::path& path) {
@@ -298,19 +298,19 @@ void FileManager::return_binary_file(const fs::path& path) {
     }
 }
 
-Result<TextWriteHandle> FileManager::request_text_write(const fs::path& path) {
+Result<TextWriteHandle, BaseErrorType> FileManager::request_text_write(const fs::path& path) {
     fs::path abs_paths = fs::absolute(path);
     if (assets_opened.contains(abs_paths) || write_files.contains(abs_paths)) {
-        ErrorType error = ErrorType::FILE_IN_USE;
-        Result text_result = Result<TextWriteHandle>(error);
+        BaseErrorType error = BaseErrorType::FILE_IN_USE;
+        Result text_result = Result<TextWriteHandle, BaseErrorType>(error);
         return text_result;
     }
     write_files.insert(abs_paths);
     std::string data;
     std::ifstream file(abs_paths, std::ios::binary);
     if (!file) {
-        ErrorType error = ErrorType::FILE_NOT_FOUND;
-        Result text_result = Result<TextWriteHandle>(error);
+        BaseErrorType error = BaseErrorType::FILE_NOT_FOUND;
+        Result text_result = Result<TextWriteHandle, BaseErrorType>(error);
         write_files.erase(path);
         return text_result;
     }
@@ -324,7 +324,7 @@ Result<TextWriteHandle> FileManager::request_text_write(const fs::path& path) {
     file.read(data.data(), size);
 
     text_files[abs_paths] = data;
-    return Result{TextWriteHandle(this, abs_paths, &text_files[abs_paths])};
+    return Result<TextWriteHandle, BaseErrorType>(TextWriteHandle(this, abs_paths, &text_files[abs_paths]));
 }
 
 void FileManager::return_text_write(const fs::path& path) {
@@ -337,11 +337,11 @@ void FileManager::return_text_write(const fs::path& path) {
     assets_opened.erase(abs_paths);
 }
 
-Result<BinaryWriteHandle> FileManager::request_binary_write(const fs::path& path) {
+Result<BinaryWriteHandle, BaseErrorType> FileManager::request_binary_write(const fs::path& path) {
     fs::path abs_paths = fs::absolute(path);
     if (assets_opened.contains(abs_paths) || write_files.contains(abs_paths)) {
-        ErrorType error = ErrorType::FILE_IN_USE;
-        Result text_result = Result<BinaryWriteHandle>(error);
+        BaseErrorType error = BaseErrorType::FILE_IN_USE;
+        Result text_result = Result<BinaryWriteHandle, BaseErrorType>(error);
         
         return text_result;
     }
@@ -350,8 +350,8 @@ Result<BinaryWriteHandle> FileManager::request_binary_write(const fs::path& path
     std::ifstream file(abs_paths, std::ios::binary);
 
     if (!file) {
-        ErrorType error = ErrorType::FILE_NOT_FOUND;
-        Result text_result = Result<BinaryWriteHandle>(error);
+        BaseErrorType error = BaseErrorType::FILE_NOT_FOUND;
+        Result text_result = Result<BinaryWriteHandle, BaseErrorType>(error);
         write_files.erase(path);
         return text_result;
     }
@@ -364,7 +364,7 @@ Result<BinaryWriteHandle> FileManager::request_binary_write(const fs::path& path
     file.read(reinterpret_cast<char*>(data.data()), size);
 
     binary_files[abs_paths] = data;
-    return Result{BinaryWriteHandle(this, abs_paths, &binary_files[abs_paths])};
+    return Result<BinaryWriteHandle, BaseErrorType>(BinaryWriteHandle(this, abs_paths, &binary_files[abs_paths]));
 }
 
 void FileManager::return_binary_write(const fs::path& path) {

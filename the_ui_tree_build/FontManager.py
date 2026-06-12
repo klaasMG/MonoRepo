@@ -1,11 +1,11 @@
 # noinspection PyUnresolvedReferences
-from font_holder import Font
+from font_holder import Font  # type: ignore[import-not-found]
 # noinspection PyUnresolvedReferences
-from GridPacker import TextPacker, PlacedRect
+from GridPacker import TextPacker, PlacedRect  # type: ignore[import-not-found]
 from PIL import Image
-Transpose = Image.Transpose
 from pathlib import Path
 from hold_lock import HoldLock
+Transpose = Image.Transpose
 
 ttf_path = Path("assets/fonts/AovelSansRounded-rdDL.ttf")
 
@@ -85,8 +85,8 @@ class FontManager:
         self.text_lock.release()
         
     def add_font(self, font_name: str, font_file: Path):
-        font_file = str(font_file)
-        font = Font(font_file)
+        font_file_str = str(font_file)
+        font = Font(font_file_str)
         self.fonts[font_name] = font
     
     def remove_font(self, font_name):

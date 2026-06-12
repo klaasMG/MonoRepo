@@ -76,3 +76,15 @@ char nextNonSpace(const std::string& s, size_t pos) {
     }
     return (i < s.size()) ? s[i] : '\0'; // '\0' if none found
 }
+
+std::string find_replace_all(std::string str, const std::string& from, const std::string& to){
+    if (from.empty()) return str;
+
+    size_t pos = 0;
+    while ((pos = str.find(from, pos)) != std::string::npos) {
+        str.replace(pos, from.length(), to);
+        pos += to.length();
+    }
+
+    return str;
+}

@@ -8,22 +8,25 @@
 
 #include "Tokens.h"
 
-class TokeniserGMAKE{
-    std::string file;
-    int TokenPos;
-    std::vector<TokenType> none_symbols;
-    std::vector<TokenType> symbols;
-public:
-    TokeniserGMAKE(const std::string& input);
+namespace gmake {
+    class TokeniserGMAKE{
+        std::string file;
+        int TokenPos;
+        std::vector<TokenType> none_symbols;
+        std::vector<TokenType> symbols;
+    public:
+        TokeniserGMAKE(const std::string& input);
 
-    std::vector<Token> Tokenise();
-private:
-    char consume_char();
-    char peek_char();
-    bool is_alphabet();
-    bool is_digit();
-    TokenType get_token_type();
-    static std::vector<TokenType> getOtherSymbols(const std::vector<TokenType>& exclude);
-};
+        std::vector<Token> Tokenise();
+    private:
+        char consume_char();
+        char peek_char();
+        bool is_alphabet();
+        bool is_digit();
+        TokenType get_token_type();
+        static std::vector<TokenType> getOtherSymbols(const std::vector<TokenType>& exclude);
+    };
+}
+
 
 #endif

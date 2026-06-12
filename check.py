@@ -83,7 +83,8 @@ for root, dirs, files in os.walk(folder):
                         if s.startswith(single):
                             full_comment_lines += 1
                             stats_per_lang[f_path.suffix]["full_comment"] += 1
-        except:
+        except Exception as e:
+            print(e)
             continue
 
         stats_per_lang[f_path.suffix]["loc"] = stats_per_lang[f_path.suffix]["total"] - stats_per_lang[f_path.suffix]["empty"] - stats_per_lang[f_path.suffix]["full_comment"]

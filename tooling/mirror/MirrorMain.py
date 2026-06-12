@@ -5,6 +5,7 @@ from pathlib import Path
 from git import Repo
 from dotenv import load_dotenv
 from github import Github, Auth
+from github.GithubException import UnknownObjectException
 
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -27,7 +28,7 @@ def set_remote_repo(git_user, project, public: bool):
     # get repo if it exists, otherwise create it
     try:
         repo_remote = git_user.get_repo(project)
-    except:
+    except UnknownObjectException:
         private: bool = not public
         repo_remote = git_user.create_repo(project, private=private)
     

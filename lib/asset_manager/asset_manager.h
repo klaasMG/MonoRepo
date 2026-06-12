@@ -45,7 +45,7 @@ public:
 
     ~TextWriteHandle();
 
-    [[nodiscard]]Result<std::string&> get();
+    [[nodiscard]]Result<std::string*, BaseErrorType> get();
 
 private:
     FileManager* manager = nullptr;
@@ -88,7 +88,7 @@ public:
 
     ~BinaryWriteHandle();
 
-    [[nodiscard]]Result<std::vector<uint8_t>&> get();
+    [[nodiscard]]Result<std::vector<uint8_t>* , BaseErrorType> get();
 
 private:
     FileManager* manager = nullptr;
@@ -98,13 +98,13 @@ private:
 
 class FileManager {
 public:
-    Result<TextHandle> reqeust_text_file(const fs::path& abs_paths);
+    Result<TextHandle, BaseErrorType> reqeust_text_file(const fs::path& abs_paths);
     void return_text_file(const fs::path& abs_paths);
-    Result<BinaryHandle> request_binary_file(const fs::path& path);
+    Result<BinaryHandle, BaseErrorType> request_binary_file(const fs::path& path);
     void return_binary_file(const fs::path& path);
-    Result<TextWriteHandle> request_text_write(const fs::path& path);
+    Result<TextWriteHandle, BaseErrorType> request_text_write(const fs::path& path);
     void return_text_write(const fs::path& path);
-    Result<BinaryWriteHandle> request_binary_write(const fs::path& path);
+    Result<BinaryWriteHandle, BaseErrorType> request_binary_write(const fs::path& path);
     void return_binary_write(const fs::path& path);
 private:
     std::map<fs::path, uint64_t> assets_opened;

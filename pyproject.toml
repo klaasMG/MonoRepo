@@ -1,0 +1,22 @@
+[project]
+name = "mono_repo"
+version = "0.3.0.0"
+requires-python = ">=3.13"
+dependencies = [
+    "ruff>0.15",
+]
+
+[tool.mypy]
+mypy_path = "the_ui_tree_build"
+check_untyped_defs = "true"
+ignore_missing_imports = "true"
+disable_error_code = ["name-defined"]
+
+[tool.ruff]
+exclude = [".venv", "venv", "__pycache__", ".git", "typeshed", "lib/vendor/cpp/fmt", ".venv", "src"]
+target-version = "py313"
+[tool.ruff.lint]
+select = ["E", "F", "B"]
+ignore = ["E501", "F401", "F405"]
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"builtins.print".msg = "Use print_wrapper instead of print."

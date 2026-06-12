@@ -156,7 +156,6 @@ using Node = std::variant<NumberNode, StringNode, BinaryNode, IdentNode, UnaryEx
 
 class Parser{
 public:
-    Parser();
     std::vector<Node> program_parse_ast(const std::vector<token>& tokens);
 private:
     size_t Node_pos = 0;
@@ -165,16 +164,7 @@ private:
     std::vector<token> Tokens = {};
     uint64_t TokenPos = 0;
     std::vector<Node> parse_code();
-    size_t parse_if_else();
-    size_t parse_body();
     size_t parse_statement();
-    size_t parse_expression();
-    size_t parse_class();
-    size_t parse_import();
-    std::vector<size_t> parse_arguments();
-    size_t parse_assignment();
-    size_t parse_factor();
-    size_t parse_identifier(bool is_not_atribute_allowed = false);
     size_t push_node(const Node& node);
     void reset_parser();
     token get_token();

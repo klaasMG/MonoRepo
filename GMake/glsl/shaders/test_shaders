@@ -1,0 +1,16 @@
+vertex_basic.glsl
+fragment_basic.glsl
+vertex_texture.glsl
+fragment_texture.glsl
+vertex_lighting.glsl
+fragment_lighting.glsl
+vertex_skinning.glsl
+fragment_skybox.glsl
+vertex_shadow.glsl
+fragment_shadow.glsl
+vertex_particle.glsl
+fragment_particle.glsl
+vertex_debug.glsl
+fragment_debug.glsl
+vertex_tessellation.glsl
+fragment_tessellation.glsl

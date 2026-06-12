@@ -1,3 +1,5 @@
+import keyword
+import tokenize
 import token
 import token as f
 if token is f:
@@ -17,7 +19,6 @@ for tok in token_names:
     print(tok)
 
 print("")
-import tokenize
 
 OPERATORS = sorted(tokenize.EXACT_TOKEN_TYPES.keys())
 
@@ -25,7 +26,6 @@ for opp in OPERATORS:
     print(opp)
 
 print("")
-import keyword
 
 KEYWORDS = keyword.kwlist
 for i in KEYWORDS:
@@ -36,9 +36,6 @@ for i in SOFT_KEYWORDS:
     print(i)
 
 print("")
-import token
-import tokenize
-import keyword
 
 python_lexical_info = {
     "token_types": list(token.tok_name.values()),

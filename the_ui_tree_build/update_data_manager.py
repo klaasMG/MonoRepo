@@ -14,6 +14,7 @@ class DataHolder:
     def update_widget_data(self,widget: GSGWidget,data: dict[WidgetDataType,int | list[int] | GSGWidget | str],new_widget:bool):
         if self.GSG_ui_system.buffers_swapped:
             self.update_changes()
+            self.GSG_ui_system.buffers_swapped = False
         widget_id = widget.id
         widget_parent = widget.parent.id
         if new_widget:

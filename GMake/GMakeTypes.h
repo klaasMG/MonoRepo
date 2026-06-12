@@ -6,24 +6,34 @@
 #include <unordered_map>
 #include <map>
 
-namespace fs = std::filesystem;
+namespace gmake {
+    namespace fs = std::filesystem;
 
-enum class GMakeFunction {
-    SET_PROJECT_DIRECTORY,
-    SET_PROGRAM,
-    EXTEND_STANDARD,
-    SSBO_LAYOUT_BINDING,
-    UNKNOWN
-};
+    enum class GMakeFunction {
+        SET_PROJECT_DIRECTORY,
+        SET_PROGRAM,
+        EXTEND_STANDARD,
+        SSBO_LAYOUT_BINDING,
+        SET_MINIMAL_VERSION,
+        UNKNOWN
+    };
 
-struct GMAKEConfig {
-    bool debug = false;
-    fs::path ProjectDir;
-    std::map<std::string, std::vector<fs::path>> ShaderPrograms;
-    std::vector<fs::path> StandardExtensions;
-    std::map<std::string, std::map<std::string, uint64_t>> SSBO_key_to_value = {};
-};
+    enum class DebugType {
+        BUILD,
+        DEBUG,
+        NONE,
+    };
 
-GMakeFunction parseFunction(const std::string& name);
+    struct GMAKEConfig {
+        bool debug = false;
+        DebugType Build = DebugType::NONE;
+        fs::path ProjectDir;
+        std::map<std::string, std::vector<fs::path>> ShaderPrograms;
+        std::vector<fs::path> StandardExtensions;
+        std::map<std::string, std::map<std::string, uint64_t>> SSBO_key_to_value = {};
+    };
+
+    GMakeFunction parseFunction(const std::string& name);
+}
 
 #endif

@@ -1,5 +1,5 @@
 import numpy as np
-from OpenGL.GL import *
+from OpenGL.GL import *  # noqa: F403
 from Uniform_Registry import uniform_registry, UniformTypes
 from enum import Enum
 from PIL import Image
@@ -85,7 +85,7 @@ class CpuFrame:
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.frame_data_height_id = np.zeros((self.width , self.height), dtype=np.uint32)
+        self.frame_data_height_id = np.zeros((self.height , self.width), dtype=np.uint32)
         self.frame_lock = HoldLock()
 
     def resize(self, width, height):
@@ -93,14 +93,14 @@ class CpuFrame:
         self.height = height
         locked = self.frame_lock.lock()
         if locked:
-            self.frame_data_height_id = np.zeros(self.width * self.height, dtype=np.uint32)
+            self.frame_data_height_id = np.zeros((self.height , self.width), dtype=np.uint32)
         self.frame_lock.release()
 
     def get_pixel_data(self, x: int, y :int):
         locked = self.frame_lock.lock()
         height_id = 0
         if locked:
-            height_id = self.frame_data_height_id[y, x]
+            height_id = self.frame_data_height_id[self.height - 1 - y, x]
         self.frame_lock.release()
         height ,widget_id = unpack_u16(height_id)
         return height, widget_id
@@ -130,7 +130,8 @@ class ShaderPassData:
         self.size = (width, height)
 
     def set_pbo_double_buffer(self):
-        self.pbo_double_buffer = PBODoubleBuffer(self.size[0], self.size[1])
+        if self.size is not None:
+            self.pbo_double_buffer = PBODoubleBuffer(self.size[0], self.size[1])
 
     def load(self, renderer):
         """Use your renderer's loader function to compile and link the shader"""
