@@ -31,11 +31,11 @@ std::string inline ErrorType_to_string(BaseErrorType type) {
 };
 
 template <typename Data, IsErrorEnum Error>
-Result<Data, Error>::Result(Data data) : data(std::move(data)), type(BaseErrorType::OK) {}
+Result<Data, Error>::Result(Data data) : data(std::move(data)), type(Error{}) {}
 
 template <typename Data, IsErrorEnum Error>
 Result<Data, Error>::Result(Data data, Error type) : data(std::move(data)), type(std::move(type)) {
-    if (this->type == BaseErrorType::OK) {
+    if (this->type == Error{}) {
         std::cerr << "a error can not be ok" << std::endl;
         std::terminate();
     }
@@ -50,7 +50,7 @@ Result<Data, Error>::~Result() {
 
 template <typename Data, IsErrorEnum Error>
 Result<Data, Error>::Result(Error type) : data{}, type(std::move(type)) {
-    if (this->type == BaseErrorType::OK) {
+    if (this->type == Error{}) {
         std::cerr << "a error can not be ok" << std::endl;
         std::terminate();
     }
@@ -77,6 +77,6 @@ Data Result<Data, Error>::Handle_Error() {
         std::terminate();
     }
     is_error_handeled = true;
-    type = BaseErrorType::OK;
+    type = Error{};
     return data;
 }
