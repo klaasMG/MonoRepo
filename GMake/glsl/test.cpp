@@ -71,6 +71,7 @@ void print_token(const Token& token) {
         lit_types += to_string(token.literal_types[i]);
     }
 
+
     fmt::println("Token{{\n"
                  "  type: {},\n"
                  "  value: \"{}\",\n"
