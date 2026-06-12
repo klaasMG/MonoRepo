@@ -5,8 +5,6 @@ add_subdirectory(glsl)
 # Header-only utility library
 add_library(utils INTERFACE)
 
-
-
 add_executable(GMake build_dependecy_graph.cpp
         SimpleASTGMAKE.h
         SimpleASTGMAKE.cpp
@@ -25,6 +23,7 @@ add_executable(GMake build_dependecy_graph.cpp
         GmakeConfigPhase.h)
 
 target_link_libraries(GMake PRIVATE common_lib GLSL)
+target_link_libraries(GMake PRIVATE fmt::fmt)
 
 set_target_properties(GMake PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY

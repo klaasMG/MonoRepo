@@ -1,7 +1,7 @@
 #ifndef EVENT_STRUCT_TOKENS_H
 #define EVENT_STRUCT_TOKENS_H
 #include <string>
-
+#include <vector>
 #include "LiteralTypes.h"
 
 namespace gmake {
