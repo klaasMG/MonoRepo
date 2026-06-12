@@ -13,7 +13,7 @@ ignore_missing_imports = "true"
 disable_error_code = ["name-defined"]
 
 [tool.ruff]
-exclude = [".venv", "venv", "__pycache__", ".git", "typeshed"]
+exclude = [".venv", "venv", "__pycache__", ".git", "typeshed", "lib/vendor/cpp/fmt"]
 target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "B"]
