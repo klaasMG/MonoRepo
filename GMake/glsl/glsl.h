@@ -12,6 +12,8 @@
 namespace glsl {
     namespace fs = std::filesystem;
     std::string ReadFilePath(const fs::path& path);
+
+
     inline int whore = 0;
     namespace fs = std::filesystem;
 
