@@ -9,6 +9,7 @@ ProcessorCount(N)
 set(ENV{CMAKE_BUILD_PARALLEL_LEVEL} ${N})
 
 function(link_compiler_library_statically target)
+
     if(MSVC)
         set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" PARENT_SCOPE)
     endif()
